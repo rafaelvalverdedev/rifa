@@ -1,0 +1,46 @@
+#grid {
+  display: grid;
+  grid-template-columns: repeat(10, 50px);
+  gap: 8px;
+  margin: 20px 0;
+}
+
+.numero {
+  background: #d4edda;
+  padding: 10px;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 5px;
+  font-weight: bold;
+}
+
+.numero:hover {
+  transform: scale(1.05);
+}
+
+.vendido {
+  background: #dc3545;
+  color: white;
+  cursor: not-allowed;
+}
+
+.reservado {
+  background: #ffc107;
+  cursor: not-allowed;
+}
+
+.selecionado {
+  background: #007bff;
+  color: white;
+}
+
+/* legenda */
+.legenda span {
+  padding: 5px 10px;
+  margin-right: 5px;
+  border-radius: 4px;
+}
+
+.disp { background: #d4edda; }
+.res { background: #ffc107; }
+.vend { background: #dc3545; color: white; }

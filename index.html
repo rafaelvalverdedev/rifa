@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Rifa</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Rifa Online</h1>
+
+<!-- LEGENDA -->
+<div class="legenda">
+  <span class="disp">Disponível</span>
+  <span class="res">Reservado</span>
+  <span class="vend">Pago</span>
+</div>
+
+<!-- GRID -->
+<div id="grid"></div>
+
+<!-- SELEÇÃO -->
+<p id="selecionado-texto">Nenhum número selecionado</p>
+
+<!-- FORM -->
+<input id="nome" placeholder="Nome">
+<input id="telefone" placeholder="Telefone">
+<input id="email" placeholder="Email">
+
+<button onclick="comprar()">Comprar</button>
+
+<!-- QR -->
+<img id="qr"/>
+
+<script src="app.js"></script>
+</body>
+</html>
