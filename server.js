@@ -14,17 +14,39 @@ const client = new MercadoPagoConfig({
 
 const payment = new Payment(client);
 
+const TEMPO_RESERVA = 10 * 60 * 1000; // 10 minutos
 
 // LISTAR
 app.get("/numeros", async (req, res) => {
-  const { data, error } = await supabase
-    .from("rifa_numeros")
-    .select("*")
-    .order("numero");
+  try {
+    const agora = new Date();
 
-  if (error) return res.status(500).json(error);
+    // LIBERA NÚMEROS EXPIRADOS
+    await supabase
+      .from("rifa_numeros")
+      .update({
+        status: "disponivel",
+        nome: null,
+        telefone: null,
+        reservado_em: null,
+        payment_id: null
+      })
+      .eq("status", "reservado")
+      .lt("reservado_em", new Date(agora - TEMPO_RESERVA));
 
-  res.json(data);
+    // BUSCA LISTA ATUALIZADA
+    const { data, error } = await supabase
+      .from("rifa_numeros")
+      .select("*")
+      .order("numero");
+
+    if (error) return res.status(500).json(error);
+
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erro ao listar números" });
+  }
 });
 
 

@@ -1,35 +1,48 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-  <title>Rifa</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rifa Online</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h1>Rifa Online</h1>
+<div class="container">
 
-<!-- LEGENDA -->
-<div class="legenda">
-  <span class="disp">Disponível</span>
-  <span class="res">Reservado</span>
-  <span class="vend">Pago</span>
+  <h1>🎟️ Rifa Online</h1>
+  <p class="descricao">Escolha um número e finalize o pagamento via PIX</p>
+
+  <div class="legenda">
+    <span class="disp">Disponível</span>
+    <span class="res">Reservado</span>
+    <span class="vend">Pago</span>
+  </div>
+
+  <div id="grid"></div>
+
+  <div class="selecionado-box">
+    <strong id="selecionado-texto">Nenhum número selecionado</strong>
+  </div>
+
+  <div class="form-box">
+    <input id="nome" placeholder="Seu nome">
+    <input id="telefone" placeholder="Telefone (opcional)">
+    <input id="email" placeholder="Seu email">
+
+    <button id="btnComprar" onclick="comprar()">Continuar para pagamento</button>
+
+    <p id="erro" class="erro"></p>
+  </div>
+
+  <div id="pagamento" class="pagamento hidden">
+    <h2>💳 Pagamento via PIX</h2>
+    <p>Escaneie o QR Code abaixo:</p>
+    <img id="qr" width="220" />
+    <p class="aguardando">Aguardando confirmação do pagamento...</p>
+  </div>
+
 </div>
-
-<!-- GRID -->
-<div id="grid"></div>
-
-<!-- SELEÇÃO -->
-<p id="selecionado-texto">Nenhum número selecionado</p>
-
-<!-- FORM -->
-<input id="nome" placeholder="Nome">
-<input id="telefone" placeholder="Telefone">
-<input id="email" placeholder="Email">
-
-<button onclick="comprar()">Comprar</button>
-
-<!-- QR -->
-<img id="qr"/>
 
 <script src="app.js"></script>
 </body>

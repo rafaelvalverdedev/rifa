@@ -1,17 +1,37 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f5f5;
+}
+
+.container {
+  max-width: 500px;
+  margin: auto;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+}
+
+.descricao {
+  text-align: center;
+  color: #666;
+}
+
 #grid {
   display: grid;
-  grid-template-columns: repeat(10, 50px);
+  grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
   gap: 8px;
   margin: 20px 0;
 }
 
 .numero {
   background: #d4edda;
-  padding: 10px;
+  padding: 12px;
   text-align: center;
-  cursor: pointer;
-  border-radius: 5px;
+  border-radius: 8px;
   font-weight: bold;
+  cursor: pointer;
 }
 
 .numero:hover {
@@ -21,12 +41,10 @@
 .vendido {
   background: #dc3545;
   color: white;
-  cursor: not-allowed;
 }
 
 .reservado {
   background: #ffc107;
-  cursor: not-allowed;
 }
 
 .selecionado {
@@ -34,13 +52,113 @@
   color: white;
 }
 
-/* legenda */
-.legenda span {
-  padding: 5px 10px;
-  margin-right: 5px;
-  border-radius: 4px;
+/* ===== INPUTS ===== */
+.form-box input {
+  width: 100%;
+  padding: 14px 12px;
+  margin: 10px 0;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+  outline: none;
+  transition: all 0.2s ease;
+  background: #fff;
 }
 
-.disp { background: #d4edda; }
-.res { background: #ffc107; }
-.vend { background: #dc3545; color: white; }
+/* foco (quando clica) */
+.form-box input:focus {
+  border-color: #28a745;
+  box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.15);
+}
+
+/* placeholder mais suave */
+.form-box input::placeholder {
+  color: #999;
+}
+
+/* erro visual (opcional se quiser usar depois) */
+.input-erro {
+  border-color: #dc3545 !important;
+  background: #fff5f5;
+}
+
+.form-box label {
+  font-size: 13px;
+  color: #555;
+  display: block;
+  margin-top: 10px;
+}
+
+/* ===== BOTÃO PRINCIPAL ===== */
+button {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #28a745, #218838);
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* hover (desktop) */
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+}
+
+/* clique */
+button:active {
+  transform: scale(0.98);
+}
+
+/* desabilitado */
+button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* versão carregando (opcional) */
+button.loading {
+  background: #999;
+}
+
+
+/* ===== LEGENDA ===== */
+.legenda {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 15px 0;
+  flex-wrap: wrap;
+}
+
+.legenda span {
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+/* disponível */
+.disp {
+  background: #d4edda;
+  color: #155724;
+}
+
+/* reservado */
+.res {
+  background: #ffc107;
+  color: #856404;
+}
+
+/* pago */
+.vend {
+  background: #dc3545;
+  color: #fff;
+}
