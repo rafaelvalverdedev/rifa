@@ -124,7 +124,7 @@ button:active {
 }
 
 /* DIV DE ERRO */
-.erro {
+.erro-animado {
  color: red;
   animation: shakeError 0.3s ease;
 }
