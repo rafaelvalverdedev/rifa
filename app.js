@@ -1,35 +1,38 @@
 const API = "https://rifa-baxs.onrender.com";
 let selecionado = null;
 
+const usuario = JSON.parse(sessionStorage.getItem("usuario"));
+
+if (!usuario) {
+    window.location.href = "login.html";
+}
+
+document.getElementById("userNome").innerText = usuario.nome;
+document.getElementById("userEmail").innerText = usuario.email;
+
 async function carregar() {
-    try {
-        const res = await fetch(`${API}/numeros`);
-        const numeros = await res.json();
+    const res = await fetch(`${API}/numeros/${usuario.rifa}`);
+    const numeros = await res.json();
 
-        const grid = document.getElementById("grid");
-        grid.innerHTML = "";
+    const grid = document.getElementById("grid");
+    grid.innerHTML = "";
 
-        numeros.forEach(n => {
-            const div = document.createElement("div");
-            div.innerText = n.numero;
-            div.className = "numero";
+    numeros.forEach(n => {
+        const div = document.createElement("div");
+        div.innerText = n.numero;
+        div.className = "numero";
 
-            if (n.status === "pago") div.classList.add("vendido");
-            if (n.status === "reservado") div.classList.add("reservado");
+        if (n.status === "pago") div.classList.add("vendido");
+        if (n.status === "reservado") div.classList.add("reservado");
 
-            if (n.status !== "disponivel") {
-                div.style.cursor = "not-allowed";
-            }
+        if (n.status !== "disponivel") {
+            div.style.cursor = "not-allowed";
+        }
 
-            div.onclick = (e) => selecionar(n, e);
+        div.onclick = (e) => selecionar(n, e);
 
-            grid.appendChild(div);
-        });
-
-    } catch (err) {
-        alert("Erro ao carregar números");
-        console.error(err);
-    }
+        grid.appendChild(div);
+    });
 }
 
 function selecionar(n, e) {
@@ -50,58 +53,24 @@ function selecionar(n, e) {
 }
 
 async function comprar() {
-    const nome = document.getElementById("nome").value;
-    const telefone = document.getElementById("telefone").value;
-    const email = document.getElementById("email").value;
-
     if (!selecionado) return alert("Escolha um número");
-    if (!nome) return alert("Informe seu nome");
-    if (!email) return alert("Informe seu email");
 
-    alert(`Você escolheu o número ${selecionado}`);
+    const res = await fetch(`${API}/reservar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            numero: selecionado,
+            nome: usuario.nome,
+            telefone: usuario.telefone,
+            email: usuario.email,
+            rifa_id: usuario.rifa
+        })
+    });
 
-    document.body.style.opacity = 0.5;
+    const data = await res.json();
 
-    try {
-        await carregar();
-        
-        const res = await fetch(`${API}/reservar`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                numero: selecionado,
-                nome,
-                telefone,
-                email
-            })
-        });
-
-        if (!res.ok) {
-            const err = await res.json();
-            alert(err.error || "Erro ao comprar");
-            return;
-        }
-
-        const data = await res.json();
-
-        document.getElementById("qr").src =
-            "data:image/png;base64," + data.qr_code_base64;
-
-        selecionado = null;
-
-        document.getElementById("selecionado-texto").innerText =
-            "Nenhum número selecionado";
-
-        carregar();
-
-    } catch (err) {
-        alert("Erro na comunicação com servidor");
-        console.error(err);
-    } finally {
-        document.body.style.opacity = 1;
-    }
+    document.getElementById("qr").src =
+        "data:image/png;base64," + data.qr_code_base64;
 }
 
 carregar();

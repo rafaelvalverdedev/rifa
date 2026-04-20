@@ -14,49 +14,59 @@ const client = new MercadoPagoConfig({
 
 const payment = new Payment(client);
 
-const TEMPO_RESERVA = 10 * 60 * 1000; // 10 minutos
+const TEMPO_RESERVA = 10 * 60 * 1000;
 
-// LISTAR
-app.get("/numeros", async (req, res) => {
-  try {
-    const agora = new Date();
+// =========================
+// LISTAR RIFAS
+// =========================
+app.get("/rifas", async (req, res) => {
+  const { data, error } = await supabase
+    .from("rifas")
+    .select("*")
+    .eq("ativa", true);
 
-    // LIBERA NÚMEROS EXPIRADOS
-    await supabase
-      .from("rifa_numeros")
-      .update({
-        status: "disponivel",
-        nome: null,
-        telefone: null,
-        reservado_em: null,
-        payment_id: null
-      })
-      .eq("status", "reservado")
-      .lt("reservado_em", new Date(agora - TEMPO_RESERVA));
+  if (error) return res.status(500).json(error);
 
-    // BUSCA LISTA ATUALIZADA
-    const { data, error } = await supabase
-      .from("rifa_numeros")
-      .select("*")
-      .order("numero");
-
-    if (error) return res.status(500).json(error);
-
-    res.json(data);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erro ao listar números" });
-  }
+  res.json(data);
 });
 
+// =========================
+// LISTAR NÚMEROS POR RIFA
+// =========================
+app.get("/numeros/:rifaId", async (req, res) => {
+  const { rifaId } = req.params;
+  const agora = new Date();
 
+  await supabase
+    .from("rifa_numeros")
+    .update({
+      status: "disponivel",
+      nome: null,
+      telefone: null,
+      reservado_em: null,
+      payment_id: null
+    })
+    .eq("status", "reservado")
+    .lt("reservado_em", new Date(agora - TEMPO_RESERVA));
+
+  const { data, error } = await supabase
+    .from("rifa_numeros")
+    .select("*")
+    .eq("rifa_id", rifaId)
+    .order("numero");
+
+  if (error) return res.status(500).json(error);
+
+  res.json(data);
+});
+
+// =========================
 // RESERVAR
+// =========================
 app.post("/reservar", async (req, res) => {
-  const { numero, nome, telefone, email } = req.body;
+  const { numero, nome, telefone, email, rifa_id } = req.body;
 
-  console.log("BODY:", req.body);
-
-  if (!numero || !nome || !email) {
+  if (!numero || !nome || !email || !rifa_id) {
     return res.status(400).json({ error: "Dados obrigatórios faltando" });
   }
 
@@ -69,13 +79,9 @@ app.post("/reservar", async (req, res) => {
       reservado_em: new Date()
     })
     .eq("numero", numero)
+    .eq("rifa_id", rifa_id)
     .eq("status", "disponivel")
     .select();
-
-  console.log("SUPABASE ERROR:", error);
-  console.log("SUPABASE DATA:", data);
-
-  console.log("Resultado update:", data);
 
   if (error || data.length === 0) {
     return res.status(400).json({ error: "Número indisponível" });
@@ -85,7 +91,7 @@ app.post("/reservar", async (req, res) => {
     const pagamento = await payment.create({
       body: {
         transaction_amount: 10,
-        description: `Rifa número ${numero}`,
+        description: `Rifa ${rifa_id} - número ${numero}`,
         payment_method_id: "pix",
         payer: { email },
         notification_url: `${process.env.BASE_URL}/webhook`
@@ -97,7 +103,8 @@ app.post("/reservar", async (req, res) => {
     await supabase
       .from("rifa_numeros")
       .update({ payment_id: paymentId })
-      .eq("numero", numero);
+      .eq("numero", numero)
+      .eq("rifa_id", rifa_id);
 
     res.json({
       qr_code_base64:
@@ -111,8 +118,9 @@ app.post("/reservar", async (req, res) => {
   }
 });
 
-
+// =========================
 // WEBHOOK
+// =========================
 app.post("/webhook", async (req, res) => {
   try {
     if (req.body.type !== "payment") return res.sendStatus(200);
@@ -133,9 +141,7 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
-
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
   console.log("Servidor rodando na porta " + PORT);
 });

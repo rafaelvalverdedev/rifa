@@ -1,51 +1,56 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rifa Online</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-<div class="container">
+  <div class="container">
 
-  <h1> Rifa Online <br> Dos lisos do Curso de Enfermágem</h1>
-  <h2>Ajude um liso se formar</h2>
-  <h3>Pelo amor de Deus</h3>
-  <p class="descricao">Escolha um número e finalize o pagamento via PIX</p>
+    <h1> Rifa Online <br> Dos lisos do Curso de Enfermágem</h1>
+    <h2>Ajude um liso se formar</h2>
+    <h3>Pelo amor de Deus</h3>
+    <p class="descricao">Escolha um número e finalize o pagamento via PIX</p>
 
-  <div class="legenda">
-    <span class="disp">Disponível</span>
-    <span class="res">Reservado</span>
-    <span class="vend">Pago</span>
+    <div class="user-info">
+      <p id="userNome"></p>
+      <p id="userEmail"></p>
+    </div>
+
+    <div class="legenda">
+      <span class="disp">Disponível</span>
+      <span class="res">Reservado</span>
+      <span class="vend">Pago</span>
+    </div>
+
+    <div id="grid"></div>
+
+    <div class="selecionado-box">
+      <strong id="selecionado-texto">Nenhum número selecionado</strong>
+    </div>
+
+    <div class="form-box">
+
+      <button id="btnComprar" onclick="comprar()">Continuar para pagamento</button>
+
+      <p id="erro" class="erro"></p>
+    </div>
+
+    <div id="pagamento" class="pagamento hidden">
+      <h2>💳 Pagamento via PIX</h2>
+      <p>Escaneie o QR Code abaixo:</p>
+      <img id="qr" width="220" />
+      <p class="aguardando">Aguardando confirmação do pagamento...</p>
+    </div>
+
   </div>
 
-  <div id="grid"></div>
-
-  <div class="selecionado-box">
-    <strong id="selecionado-texto">Nenhum número selecionado</strong>
-  </div>
-
-  <div class="form-box">
-    <input id="nome" placeholder="Seu nome">
-    <input id="telefone" placeholder="Telefone (opcional)">
-    <input id="email" placeholder="Seu email">
-
-    <button id="btnComprar" onclick="comprar()">Continuar para pagamento</button>
-
-    <p id="erro" class="erro"></p>
-  </div>
-
-  <div id="pagamento" class="pagamento hidden">
-    <h2>💳 Pagamento via PIX</h2>
-    <p>Escaneie o QR Code abaixo:</p>
-    <img id="qr" width="220" />
-    <p class="aguardando">Aguardando confirmação do pagamento...</p>
-  </div>
-
-</div>
-
-<script src="app.js"></script>
+  <script src="app.js"></script>
 </body>
+
 </html>

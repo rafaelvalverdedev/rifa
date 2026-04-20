@@ -162,3 +162,11 @@ button.loading {
   background: #dc3545;
   color: #fff;
 }
+
+
+.user-info {
+  text-align: center;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #444;
+}

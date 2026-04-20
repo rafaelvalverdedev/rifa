@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Entrar na Rifa</title>
+  <link rel="stylesheet" href="login.css">
+</head>
+<body>
+
+<div class="container">
+
+  <h1>Participar da Rifa</h1>
+
+  <input id="nome" placeholder="Seu nome">
+  <input id="telefone" placeholder="Telefone">
+  <input id="email" placeholder="Seu email">
+
+  <select id="rifa"></select>
+
+  <button onclick="entrar()">Continuar</button>
+
+</div>
+
+<script>
+const API = "https://rifa-baxs.onrender.com";
+
+async function carregarRifas() {
+  const res = await fetch(`${API}/rifas`);
+  const rifas = await res.json();
+
+  const select = document.getElementById("rifa");
+
+  rifas.forEach(r => {
+    const option = document.createElement("option");
+    option.value = r.id;
+    option.innerText = `${r.nome} - R$ ${r.valor}`;
+    select.appendChild(option);
+  });
+}
+
+function entrar() {
+  const nome = document.getElementById("nome");
+  const telefone = document.getElementById("telefone");
+  const email = document.getElementById("email");
+  const rifa = document.getElementById("rifa");
+
+  let erro = false;
+
+  if (!nome.value) { nome.classList.add("erro-animado"); erro = true; }
+  if (!email.value) { email.classList.add("erro-animado"); erro = true; }
+
+  if (erro) return;
+
+  sessionStorage.setItem("usuario", JSON.stringify({
+    nome: nome.value,
+    telefone: telefone.value,
+    email: email.value,
+    rifa: rifa.value
+  }));
+
+  window.location.href = "index.html";
+}
+
+carregarRifas();
+</script>
+
+</body>
+</html>
