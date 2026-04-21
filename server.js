@@ -66,13 +66,13 @@ app.get("/numeros/:rifaId", async (req, res) => {
 // =========================
 app.post("/reservar", async (req, res) => {
   try {
-    let { numero, nome, telefone, email, rifa_id } = req.body;
+    let { numero, nome, telefone, email, rifa_id, status } = req.body;
 
     console.log("DEBUG REQUEST:", {
       numero,
       rifa_id,
       tipoNumero: typeof numero,
-      tipoRifa: typeof rifa_id
+      tipoRifa: typeof rifa_id,
     });
 
     // validação
@@ -111,7 +111,7 @@ app.post("/reservar", async (req, res) => {
     // reservar via função SQL
     const { data, error } = await supabase.rpc("reservar_numero", {
       p_numero: numero,
-      p_rifa_id: rifa_id,
+      p_rifa_id: rifa_id.trim,
       p_nome: nome,
       p_telefone: telefone,
       p_email: email
