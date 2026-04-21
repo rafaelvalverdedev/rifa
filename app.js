@@ -51,7 +51,6 @@ function selecionar(n, e) {
     document.getElementById("selecionado-texto").innerText =
         `Número selecionado: ${n.numero}`;
 
-    // 🔄 RESET DO PAGAMENTO
     document.getElementById("pagamento").classList.add("hidden");
     document.getElementById("qr").src = "";
 }
@@ -67,10 +66,20 @@ async function comprar() {
             return mostrarErro("Escolha um número");
         }
 
+        if (!usuario.rifa) {
+            return mostrarErro("Rifa inválida. Volte e selecione novamente.");
+        }
+
+        const numeroFinal = Number(selecionado);
+        const rifaFinal = Number(usuario.rifa);
+
+        if (!Number.isFinite(numeroFinal) || !Number.isFinite(rifaFinal)) {
+            return mostrarErro("Erro interno: dados inválidos.");
+        }
+
         btn.disabled = true;
         btn.innerText = "Processando...";
 
-        // 👇 MOSTRA LOADING
         document.getElementById("pagamento").classList.remove("hidden");
         document.getElementById("qr").src = "";
 
@@ -78,11 +87,11 @@ async function comprar() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                numero: Number(selecionado),
+                numero: numeroFinal,
                 nome: usuario.nome,
                 telefone: usuario.telefone,
                 email: usuario.email,
-                rifa_id: Number(usuario.rifa)
+                rifa_id: rifaFinal
             })
         });
 
@@ -104,6 +113,10 @@ async function comprar() {
 
         document.getElementById("qr").src =
             "data:image/png;base64," + data.qr_code_base64;
+
+        document.getElementById("pagamento").scrollIntoView({
+            behavior: "smooth"
+        });
 
     } catch (err) {
         console.error(err);

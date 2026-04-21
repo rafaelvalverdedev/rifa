@@ -16,9 +16,6 @@ const payment = new Payment(client);
 
 const TEMPO_RESERVA = 10 * 60 * 1000;
 
-// =========================
-// LISTAR RIFAS
-// =========================
 app.get("/rifas", async (req, res) => {
   const { data, error } = await supabase
     .from("rifas")
@@ -26,18 +23,14 @@ app.get("/rifas", async (req, res) => {
     .eq("ativa", true);
 
   if (error) return res.status(500).json(error);
- 
+
   res.json(data);
 });
 
-// =========================
-// LISTAR NÚMEROS POR RIFA
-// =========================
 app.get("/numeros/:rifaId", async (req, res) => {
   const { rifaId } = req.params;
   const agora = new Date();
 
-  // libera reservas expiradas
   await supabase
     .from("rifa_numeros")
     .update({
@@ -61,22 +54,24 @@ app.get("/numeros/:rifaId", async (req, res) => {
   res.json(data);
 });
 
-// =========================
-// RESERVAR (SEGURO)
-// =========================
 app.post("/reservar", async (req, res) => {
   try {
     let { numero, nome, telefone, email, rifa_id } = req.body;
 
-    // 🔒 VALIDAÇÃO DE TIPO
+    console.log("DEBUG:", {
+      numero,
+      rifa_id,
+      tipoNumero: typeof numero,
+      tipoRifa: typeof rifa_id
+    });
+
     if (
-      typeof numero !== "number" ||
-      typeof rifa_id !== "number"
+      !Number.isFinite(numero) ||
+      !Number.isFinite(rifa_id)
     ) {
       return res.status(400).json({ error: "Dados inválidos" });
     }
 
-    // 🔒 VALIDAÇÃO DE CONTEÚDO
     if (!nome || nome.trim().length < 3) {
       return res.status(400).json({ error: "Nome inválido" });
     }
@@ -85,12 +80,10 @@ app.post("/reservar", async (req, res) => {
       return res.status(400).json({ error: "Email inválido" });
     }
 
-    // 🧹 SANITIZAÇÃO
     nome = nome.trim();
     email = email.trim().toLowerCase();
     telefone = telefone?.trim();
 
-    // 🔍 VALIDAR RIFA NO BANCO
     const { data: rifa, error: erroRifa } = await supabase
       .from("rifas")
       .select("id, valor")
@@ -102,7 +95,6 @@ app.post("/reservar", async (req, res) => {
       return res.status(400).json({ error: "Rifa inválida" });
     }
 
-    // 🔒 RESERVA ATÔMICA (RPC)
     const { data, error } = await supabase.rpc("reservar_numero", {
       p_numero: numero,
       p_rifa_id: rifa_id,
@@ -115,7 +107,6 @@ app.post("/reservar", async (req, res) => {
       return res.status(400).json({ error: "Número indisponível" });
     }
 
-    // 💳 PAGAMENTO COM VALOR REAL
     const pagamento = await payment.create({
       body: {
         transaction_amount: rifa.valor,
@@ -146,9 +137,6 @@ app.post("/reservar", async (req, res) => {
   }
 });
 
-// =========================
-// WEBHOOK
-// =========================
 app.post("/webhook", async (req, res) => {
   try {
     if (req.body.type !== "payment") return res.sendStatus(200);
