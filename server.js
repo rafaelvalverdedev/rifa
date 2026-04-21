@@ -65,11 +65,8 @@ app.post("/reservar", async (req, res) => {
       tipoRifa: typeof rifa_id
     });
 
-    if (
-      !Number.isFinite(numero) ||
-      !Number.isFinite(rifa_id)
-    ) {
-      return res.status(400).json({ error: "Dados inválidos" });
+    if (!rifa_id || typeof rifa_id !== "string") {
+      return res.status(400).json({ error: "Rifa inválida" });
     }
 
     if (!nome || nome.trim().length < 3) {
