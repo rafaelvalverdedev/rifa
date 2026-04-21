@@ -50,27 +50,75 @@ function selecionar(n, e) {
 
     document.getElementById("selecionado-texto").innerText =
         `Número selecionado: ${n.numero}`;
+
+    // 🔄 RESET DO PAGAMENTO
+    document.getElementById("pagamento").classList.add("hidden");
+    document.getElementById("qr").src = "";
 }
 
 async function comprar() {
-    if (!selecionado) return alert("Escolha um número");
+    const btn = document.getElementById("btnComprar");
+    const erroEl = document.getElementById("erro");
 
-    const res = await fetch(`${API}/reservar`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            numero: selecionado,
-            nome: usuario.nome,
-            telefone: usuario.telefone,
-            email: usuario.email,
-            rifa_id: usuario.rifa
-        })
-    });
+    erroEl.innerText = "";
 
-    const data = await res.json();
+    try {
+        if (!selecionado) {
+            return mostrarErro("Escolha um número");
+        }
 
-    document.getElementById("qr").src =
-        "data:image/png;base64," + data.qr_code_base64;
+        btn.disabled = true;
+        btn.innerText = "Processando...";
+
+        // 👇 MOSTRA LOADING
+        document.getElementById("pagamento").classList.remove("hidden");
+        document.getElementById("qr").src = "";
+
+        const res = await fetch(`${API}/reservar`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                numero: selecionado,
+                nome: usuario.nome,
+                telefone: usuario.telefone,
+                email: usuario.email,
+                rifa_id: usuario.rifa
+            })
+        });
+
+        let data;
+
+        try {
+            data = await res.json();
+        } catch {
+            throw new Error("Resposta inválida do servidor");
+        }
+
+        if (!res.ok) {
+            throw new Error(data.error || "Erro ao reservar número");
+        }
+
+        if (!data.qr_code_base64) {
+            throw new Error("Erro ao gerar QR Code");
+        }
+
+        document.getElementById("qr").src =
+            "data:image/png;base64," + data.qr_code_base64;
+
+    } catch (err) {
+        console.error(err);
+        mostrarErro(err.message);
+        document.getElementById("pagamento").classList.add("hidden");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Continuar para pagamento";
+    }
+}
+
+function mostrarErro(msg) {
+    const el = document.getElementById("erro");
+    el.innerText = msg;
+    el.style.display = "block";
 }
 
 carregar();
