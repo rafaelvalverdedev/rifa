@@ -78,11 +78,11 @@ async function comprar() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                numero: selecionado,
+                numero: Number(selecionado),
                 nome: usuario.nome,
                 telefone: usuario.telefone,
                 email: usuario.email,
-                rifa_id: usuario.rifa
+                rifa_id: Number(usuario.rifa)
             })
         });
 

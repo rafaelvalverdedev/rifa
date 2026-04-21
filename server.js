@@ -26,7 +26,7 @@ app.get("/rifas", async (req, res) => {
     .eq("ativa", true);
 
   if (error) return res.status(500).json(error);
-
+ 
   res.json(data);
 });
 

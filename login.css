@@ -129,3 +129,16 @@ button:active {
   animation: shakeError 0.3s ease;
 }
 
+.erro-box {
+  background: #ffe5e5;
+  color: #b30000;
+  padding: 10px;
+  border-radius: 8px;
+  margin-top: 10px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.hidden {
+  display: none;
+}

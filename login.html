@@ -19,7 +19,7 @@
     <select id="rifa"></select>
 
     <button onclick="entrar()">Continuar</button>
-
+    <div id="erroForm" class="erro-box hidden"></div>
   </div>
 
   <script>
@@ -31,6 +31,16 @@
 
       const select = document.getElementById("rifa");
 
+      // opção padrão
+      const optionDefault = document.createElement("option");
+      optionDefault.value = "";
+      optionDefault.innerText = "Escolha a rifa";
+      optionDefault.disabled = true;
+      optionDefault.selected = true;
+
+      select.appendChild(optionDefault);
+
+      // lista de rifas
       rifas.forEach(r => {
         const option = document.createElement("option");
         option.value = r.id;
@@ -44,25 +54,94 @@
       const telefone = document.getElementById("telefone");
       const email = document.getElementById("email");
       const rifa = document.getElementById("rifa");
+      const erroBox = document.getElementById("erroForm");
 
-      let erro = false;
+      // limpa erro anterior
+      erroBox.classList.add("hidden");
+      erroBox.innerText = "";
 
-      if (!nome.value) { nome.classList.add("erro-animado"); erro = true; }
-      if (!email.value) { email.classList.add("erro-animado"); erro = true; }
-      if (!rifa.value) { rifa.classList.add("erro-animado"); erro = true; }
+      // remove estilos antigos
+      [nome, telefone, email, rifa].forEach(el => {
+        el.classList.remove("erro-animado");
+      });
 
-      if (erro) return;
+      // validação sequencial (para no primeiro erro)
+      if (!nome.value.trim()) {
+        return mostrarErro("Informe seu nome", nome);
+      }
 
+      if (!telefone.value.trim()) {
+        return mostrarErro("Informe seu telefone", telefone);
+      }
+
+      if (!telefoneValido(telefone.value)) {
+        return mostrarErro("Telefone inválido", telefone);
+      }
+
+      if (!email.value.trim()) {
+        return mostrarErro("Informe seu email", email);
+      }
+
+      if (!emailValido(email.value)) {
+        return mostrarErro("Email inválido", email);
+      }
+
+      if (!rifa.value) {
+        return mostrarErro("Selecione uma rifa", rifa);
+      }
+
+      const telefoneLimpo = telefone.value.replace(/\D/g, "");
+      const emailLimpo = email.value.trim().toLowerCase();
+
+      // se tudo ok
       sessionStorage.setItem("usuario", JSON.stringify({
-        nome: nome.value,
-        telefone: telefone.value,
-        email: email.value,
+        nome: nome.value.trim(),
+        telefone: telefoneLimpo,
+        email: emailLimpo,
         rifa: rifa.value
       }));
 
       window.location.href = "index.html";
     }
 
+    function mostrarErro(msg, campo) {
+      const erroBox = document.getElementById("erroForm");
+
+      erroBox.innerText = msg;
+      erroBox.classList.remove("hidden");
+
+      campo.classList.add("erro-animado");
+      campo.focus();
+    }
+
+
+    const telefoneInput = document.getElementById("telefone");
+
+    telefoneInput.addEventListener("input", (e) => {
+      let v = e.target.value.replace(/\D/g, "");
+
+      if (v.length > 11) v = v.slice(0, 11);
+
+      if (v.length > 6) {
+        v = v.replace(/^(\d{2})(\d{5})(\d{0,4})/, "($1) $2-$3");
+      } else if (v.length > 2) {
+        v = v.replace(/^(\d{2})(\d{0,5})/, "($1) $2");
+      } else {
+        v = v.replace(/^(\d*)/, "($1");
+      }
+
+      e.target.value = v;
+    });
+
+    function telefoneValido(valor) {
+      const numeros = valor.replace(/\D/g, "");
+      return numeros.length >= 10;
+    }
+
+    function emailValido(email) {
+      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return regex.test(email);
+    }
     carregarRifas();
   </script>
 
