@@ -73,7 +73,7 @@ async function comprar() {
         const numeroFinal = Number(selecionado);
         const rifaFinal = usuario.rifa;
 
-        if (!Number.isFinite(numeroFinal) || !Number.isFinite(rifaFinal)) {
+        if (!Number.isFinite(numeroFinal) || !rifaFinal) {
             return mostrarErro("Erro interno: dados inválidos.");
         }
 
