@@ -66,14 +66,9 @@ app.get("/numeros/:rifaId", async (req, res) => {
 // =========================
 app.post("/reservar", async (req, res) => {
   try {
-    let { numero, nome, telefone, email, rifa_id, status } = req.body;
+    let { numero, rifa_id, nome, telefone, email } = req.body;
 
-    console.log("DEBUG REQUEST:", {
-      numero,
-      rifa_id,
-      tipoNumero: typeof numero,
-      tipoRifa: typeof rifa_id,
-    });
+    console.log("DEBUG REQUEST:", req.body);
 
     // validação
     if (!Number.isFinite(numero)) {
@@ -97,12 +92,13 @@ app.post("/reservar", async (req, res) => {
     telefone = telefone?.trim();
 
     // validar rifa
-    const { data: rifa } = await supabase
-      .from("rifas")
-      .select("id, valor")
-      .eq("id", rifa_id)
-      .eq("ativa", true)
-      .single();
+    const { data: rifa } = await supabase.rpc('reservar_numero', {
+      p_numero: numero,
+      p_rifa_id: rifa_id.trim(),
+      p_nome: nome,
+      p_telefone: telefone,
+      p_email: email
+    });
 
     if (!rifa) {
       return res.status(400).json({ error: "Rifa inválida" });
