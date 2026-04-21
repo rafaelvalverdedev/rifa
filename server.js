@@ -16,6 +16,9 @@ const payment = new Payment(client);
 
 const TEMPO_RESERVA = 10 * 60 * 1000;
 
+// =========================
+// LISTAR RIFAS
+// =========================
 app.get("/rifas", async (req, res) => {
   const { data, error } = await supabase
     .from("rifas")
@@ -27,10 +30,14 @@ app.get("/rifas", async (req, res) => {
   res.json(data);
 });
 
+// =========================
+// LISTAR NÚMEROS
+// =========================
 app.get("/numeros/:rifaId", async (req, res) => {
   const { rifaId } = req.params;
   const agora = new Date();
 
+  // liberar reservas expiradas
   await supabase
     .from("rifa_numeros")
     .update({
@@ -54,16 +61,24 @@ app.get("/numeros/:rifaId", async (req, res) => {
   res.json(data);
 });
 
+// =========================
+// RESERVAR
+// =========================
 app.post("/reservar", async (req, res) => {
   try {
     let { numero, nome, telefone, email, rifa_id } = req.body;
 
-    console.log("DEBUG:", {
+    console.log("DEBUG REQUEST:", {
       numero,
       rifa_id,
       tipoNumero: typeof numero,
       tipoRifa: typeof rifa_id
     });
+
+    // validação
+    if (!Number.isFinite(numero)) {
+      return res.status(400).json({ error: "Número inválido" });
+    }
 
     if (!rifa_id || typeof rifa_id !== "string") {
       return res.status(400).json({ error: "Rifa inválida" });
@@ -81,17 +96,19 @@ app.post("/reservar", async (req, res) => {
     email = email.trim().toLowerCase();
     telefone = telefone?.trim();
 
-    const { data: rifa, error: erroRifa } = await supabase
+    // validar rifa
+    const { data: rifa } = await supabase
       .from("rifas")
       .select("id, valor")
       .eq("id", rifa_id)
       .eq("ativa", true)
       .single();
 
-    if (erroRifa || !rifa) {
+    if (!rifa) {
       return res.status(400).json({ error: "Rifa inválida" });
     }
 
+    // reservar via função SQL
     const { data, error } = await supabase.rpc("reservar_numero", {
       p_numero: numero,
       p_rifa_id: rifa_id,
@@ -104,6 +121,7 @@ app.post("/reservar", async (req, res) => {
       return res.status(400).json({ error: "Número indisponível" });
     }
 
+    // pagamento PIX
     const pagamento = await payment.create({
       body: {
         transaction_amount: rifa.valor,
@@ -134,6 +152,9 @@ app.post("/reservar", async (req, res) => {
   }
 });
 
+// =========================
+// WEBHOOK
+// =========================
 app.post("/webhook", async (req, res) => {
   try {
     if (req.body.type !== "payment") return res.sendStatus(200);
