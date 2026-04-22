@@ -174,3 +174,23 @@ button.loading {
 .hidden {
   display: none;
 }
+
+
+.pix-copia-cola {
+  margin-top: 20px;
+}
+
+.pix-copia-cola textarea {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  resize: none;
+  font-size: 14px;
+  margin-top: 8px;
+  margin-bottom: 10px;
+}
+
+.btn-copiar {
+  width: 100%;
+}

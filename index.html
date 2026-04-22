@@ -46,9 +46,24 @@
 
     <div id="pagamento" class="pagamento hidden">
       <h2>💳 Pagamento via PIX</h2>
+
       <p>Escaneie o QR Code abaixo:</p>
       <img id="qr" width="220" />
-      <p class="aguardando">Aguardando confirmação do pagamento...</p>
+
+      <div class="pix-copia-cola">
+        <label for="pixCode"><strong>Ou copie o código PIX:</strong></label>
+
+        <textarea id="pixCode" readonly rows="4" placeholder="Código PIX aparecerá aqui">
+    </textarea>
+
+        <button onclick="copiarPix()" class="btn-copiar">
+          📋 Copiar código PIX
+        </button>
+      </div>
+
+      <p class="aguardando">
+        Aguardando confirmação do pagamento...
+      </p>
     </div>
 
   </div>

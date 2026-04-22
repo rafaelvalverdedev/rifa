@@ -124,6 +124,9 @@ async function comprar() {
         document.getElementById("qr").src =
             "data:image/png;base64," + data.qr_code_base64;
 
+        document.getElementById("pixCode").value =
+            data.qr_code || "";
+
         // scroll suave
         document.getElementById("pagamento").scrollIntoView({
             behavior: "smooth"
@@ -141,6 +144,27 @@ async function comprar() {
         btn.innerText = "Continuar para pagamento";
     }
 }
+
+function copiarPix() {
+    const campo = document.getElementById("pixCode");
+
+    if (!campo.value) {
+        mostrarErro("Código PIX não disponível.");
+        return;
+    }
+
+    campo.select();
+    campo.setSelectionRange(0, 99999);
+
+    navigator.clipboard.writeText(campo.value)
+        .then(() => {
+            alert("Código PIX copiado com sucesso!");
+        })
+        .catch(() => {
+            mostrarErro("Erro ao copiar código PIX.");
+        });
+}
+
 
 
 function voltar() {
