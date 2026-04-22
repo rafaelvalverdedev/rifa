@@ -92,15 +92,13 @@ app.post("/reservar", async (req, res) => {
     telefone = telefone?.trim();
 
     // validar rifa
-    const { data: rifa } = await supabase.rpc('reservar_numero', {
-      p_numero: numero,
-      p_rifa_id: rifa_id.trim(),
-      p_nome: nome,
-      p_telefone: telefone,
-      p_email: email
-    });
+    const { data: rifa, error: rifaError } = await supabase
+      .from("rifas")
+      .select("*")
+      .eq("id", rifa_id.trim())
+      .single();
 
-    if (!rifa) {
+    if (rifaError || !rifa) {
       return res.status(400).json({ error: "Rifa inválida" });
     }
 
