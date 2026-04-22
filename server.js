@@ -1,3 +1,5 @@
+// server.js
+
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -5,6 +7,7 @@ const { MercadoPagoConfig, Payment } = require("mercadopago");
 const supabase = require("./supabase");
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
@@ -14,65 +17,94 @@ const client = new MercadoPagoConfig({
 
 const payment = new Payment(client);
 
-const TEMPO_RESERVA = 10 * 60 * 1000;
+const TEMPO_RESERVA = 10 * 60 * 1000; // 10 minutos
 
-// =========================
+// ========================================
 // LISTAR RIFAS
-// =========================
+// ========================================
 app.get("/rifas", async (req, res) => {
-  const { data, error } = await supabase
-    .from("rifas")
-    .select("*")
-    .eq("ativa", true);
+  try {
+    const { data, error } = await supabase
+      .from("rifas")
+      .select("*")
+      .eq("ativa", true)
+      .order("nome");
 
-  if (error) return res.status(500).json(error);
+    if (error) {
+      console.error("ERRO RIFAS:", error);
+      return res.status(500).json({ error: "Erro ao carregar rifas" });
+    }
 
-  res.json(data);
+    res.json(data);
+  } catch (err) {
+    console.error("ERRO INTERNO RIFAS:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
 });
 
-// =========================
-// LISTAR NÚMEROS
-// =========================
-app.get("/numeros/:rifaId", async (req, res) => {
-  const { rifaId } = req.params;
-  const agora = new Date();
+// ========================================
+// LIBERAR RESERVAS EXPIRADAS
+// ========================================
+async function liberarReservasExpiradas() {
+  const limite = new Date(Date.now() - TEMPO_RESERVA);
 
-  // liberar reservas expiradas
-  await supabase
+  const { error } = await supabase
     .from("rifa_numeros")
     .update({
       status: "disponivel",
       nome: null,
       telefone: null,
+      email: null,
       reservado_em: null,
       payment_id: null
     })
     .eq("status", "reservado")
-    .lt("reservado_em", new Date(agora - TEMPO_RESERVA));
+    .lt("reservado_em", limite.toISOString());
 
-  const { data, error } = await supabase
-    .from("rifa_numeros")
-    .select("*")
-    .eq("rifa_id", rifaId)
-    .order("numero");
+  if (error) {
+    console.error("ERRO AO LIBERAR RESERVAS:", error);
+  }
+}
 
-  if (error) return res.status(500).json(error);
+// ========================================
+// LISTAR NÚMEROS
+// ========================================
+app.get("/numeros/:rifaId", async (req, res) => {
+  try {
+    const { rifaId } = req.params;
 
-  res.json(data);
+    await liberarReservasExpiradas();
+
+    const { data, error } = await supabase
+      .from("rifa_numeros")
+      .select("*")
+      .eq("rifa_id", rifaId)
+      .order("numero", { ascending: true });
+
+    if (error) {
+      console.error("ERRO NÚMEROS:", error);
+      return res.status(500).json({ error: "Erro ao carregar números" });
+    }
+
+    res.json(data);
+  } catch (err) {
+    console.error("ERRO INTERNO NÚMEROS:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
 });
 
-// =========================
-// RESERVAR NÚMERO
-// =========================
+// ========================================
+// RESERVAR + GERAR PIX
+// ========================================
 app.post("/reservar", async (req, res) => {
   try {
-    let { numero, rifa_id, nome, telefone, email } = req.body;
+    let { numero, nome, telefone, email, rifa_id } = req.body;
 
     console.log("DEBUG REQUEST:", req.body);
 
-    // =========================
-    // VALIDAÇÕES BÁSICAS
-    // =========================
+    // ----------------------------
+    // Validações
+    // ----------------------------
     if (!Number.isFinite(numero)) {
       return res.status(400).json({ error: "Número inválido" });
     }
@@ -89,112 +121,156 @@ app.post("/reservar", async (req, res) => {
       return res.status(400).json({ error: "Email inválido" });
     }
 
+    numero = Number(numero);
     nome = nome.trim();
+    telefone = (telefone || "").trim();
     email = email.trim().toLowerCase();
-    telefone = telefone?.trim();
     rifa_id = rifa_id.trim();
 
-    // =========================
-    // VALIDAR SE A RIFA EXISTE
-    // =========================
-    const { data: rifa, error: rifaError } = await supabase
+    // ----------------------------
+    // Validar rifa
+    // ----------------------------
+    const { data: rifa, error: erroRifa } = await supabase
       .from("rifas")
       .select("*")
       .eq("id", rifa_id)
       .single();
 
-    if (rifaError || !rifa) {
-      console.error("RIFA NÃO ENCONTRADA:", rifaError);
+    if (erroRifa || !rifa) {
+      console.error("RIFA NÃO ENCONTRADA:", erroRifa);
       return res.status(400).json({ error: "Rifa inválida" });
     }
 
-    // =========================
-    // RESERVAR NÚMERO (RPC)
-    // =========================
+    // ----------------------------
+    // Reservar número via RPC
+    // IMPORTANTE:
+    // A função SQL deve estar na mesma ordem:
+    //
+    // reservar_numero(
+    //   p_email text,
+    //   p_nome text,
+    //   p_numero integer,
+    //   p_rifa_id uuid,
+    //   p_telefone text
+    // )
+    // ----------------------------
     const { data, error } = await supabase.rpc("reservar_numero", {
+      p_email: email,
+      p_nome: nome,
       p_numero: numero,
       p_rifa_id: rifa_id,
-      p_nome: nome,
-      p_telefone: telefone,
-      p_email: email
+      p_telefone: telefone
     });
 
     if (error) {
       console.error("ERRO RPC:", error);
-      return res.status(400).json({ error: "Erro ao reservar número" });
+      return res.status(400).json({
+        error: "Erro ao reservar número"
+      });
     }
 
     if (!data || !data[0]?.success) {
-      return res.status(400).json({ error: "Número indisponível" });
+      return res.status(400).json({
+        error: "Número indisponível"
+      });
     }
 
-    // =========================
-    // GERAR PAGAMENTO PIX
-    // =========================
+    // ----------------------------
+    // Criar pagamento PIX
+    // ----------------------------
     const pagamento = await payment.create({
       body: {
         transaction_amount: Number(rifa.valor),
-        description: `Rifa ${rifa.nome} - número ${numero}`,
+        description: `Rifa ${rifa.nome} - Número ${numero}`,
         payment_method_id: "pix",
-        payer: { email },
+        payer: {
+          email: email
+        },
         notification_url: `${process.env.BASE_URL}/webhook`
       }
     });
+
+    console.log(
+      "POINT OF INTERACTION:",
+      JSON.stringify(
+        pagamento.point_of_interaction,
+        null,
+        2
+      )
+    );
 
     const paymentId = pagamento.id;
 
     // salvar payment_id
     await supabase
       .from("rifa_numeros")
-      .update({ payment_id: paymentId })
-      .eq("numero", numero)
-      .eq("rifa_id", rifa_id);
+      .update({
+        payment_id: paymentId
+      })
+      .eq("rifa_id", rifa_id)
+      .eq("numero", numero);
 
+    // ----------------------------
+    // Resposta para frontend
+    // ----------------------------
     res.json({
       qr_code_base64:
-        pagamento.point_of_interaction.transaction_data.qr_code_base64,
+        pagamento.point_of_interaction?.transaction_data?.qr_code_base64 || "",
 
       qr_code:
-        pagamento.point_of_interaction.transaction_data.qr_code,
+        pagamento.point_of_interaction?.transaction_data?.qr_code || "",
 
       payment_id: paymentId
     });
 
   } catch (err) {
-    console.error("ERRO INTERNO:", err);
-    res.status(500).json({ error: "Erro interno do servidor" });
+    console.error("ERRO INTERNO /reservar:", err);
+    res.status(500).json({
+      error: "Erro interno do servidor"
+    });
   }
 });
 
-// =========================
-// WEBHOOK (MERCADO PAGO)
-// =========================
+// ========================================
+// WEBHOOK MERCADO PAGO
+// ========================================
 app.post("/webhook", async (req, res) => {
   try {
-    if (req.body.type !== "payment") return res.sendStatus(200);
+    if (req.body.type !== "payment") {
+      return res.sendStatus(200);
+    }
 
-    const pagamento = await payment.get({ id: req.body.data.id });
+    const paymentId = req.body.data?.id;
+
+    if (!paymentId) {
+      return res.sendStatus(200);
+    }
+
+    const pagamento = await payment.get({
+      id: paymentId
+    });
 
     if (pagamento.status === "approved") {
-      const paymentId = pagamento.id;
-
       await supabase
         .from("rifa_numeros")
-        .update({ status: "pago" })
+        .update({
+          status: "pago"
+        })
         .eq("payment_id", paymentId);
+
+      console.log("PAGAMENTO APROVADO:", paymentId);
     }
 
     res.sendStatus(200);
-
   } catch (err) {
     console.error("ERRO WEBHOOK:", err);
     res.sendStatus(500);
   }
 });
 
-// =========================
-// START SERVER
-// =========================
+// ========================================
+// START
+// ========================================
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
