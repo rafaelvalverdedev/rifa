@@ -46,23 +46,43 @@ app.get("/rifas", async (req, res) => {
 // LIBERAR RESERVAS EXPIRADAS
 // ========================================
 async function liberarReservasExpiradas() {
-  const limite = new Date(Date.now() - TEMPO_RESERVA);
+  try {
+    const limite = new Date(Date.now() - TEMPO_RESERVA);
 
-  const { error } = await supabase
-    .from("rifa_numeros")
-    .update({
-      status: "disponivel",
-      nome: null,
-      telefone: null,
-      email: null,
-      reservado_em: null,
-      payment_id: null
-    })
-    .eq("status", "reservado")
-    .lt("reservado_em", limite.toISOString());
+    console.log("LIBERANDO RESERVAS ANTES DE:", limite);
 
-  if (error) {
-    console.error("ERRO AO LIBERAR RESERVAS:", error);
+    const { data, error } = await supabase
+      .from("rifa_numeros")
+      .update({
+        status: "disponivel",
+        nome: null,
+        telefone: null,
+        email: null,
+        reservado_em: null,
+        payment_id: null
+      })
+      .eq("status", "reservado")
+      .lt("reservado_em", limite.toISOString())
+      .select();
+
+    if (error) {
+      console.error(
+        "ERRO AO LIBERAR RESERVAS:",
+        error
+      );
+      return;
+    }
+
+    console.log(
+      "NÚMEROS LIBERADOS:",
+      data?.length || 0
+    );
+
+  } catch (err) {
+    console.error(
+      "ERRO INTERNO AO LIBERAR RESERVAS:",
+      err
+    );
   }
 }
 
@@ -98,6 +118,7 @@ app.get("/numeros/:rifaId", async (req, res) => {
 // ========================================
 app.post("/reservar", async (req, res) => {
   try {
+    await liberarReservasExpiradas();
     let { numero, nome, telefone, email, rifa_id } = req.body;
 
     console.log("DEBUG REQUEST:", req.body);
