@@ -142,6 +142,13 @@ async function comprar() {
     }
 }
 
+
+function voltar() {
+    sessionStorage.removeItem("usuario"); // limpa dados
+    window.location.href = "login.html";  // volta pra tela inicial
+}
+
+
 // =========================
 // ERRO UI
 // =========================
