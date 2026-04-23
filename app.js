@@ -1,8 +1,6 @@
-// app.js
-
 const API = "https://rifa-baxs.onrender.com";
 
-let selecionado = null;
+let selecionados = [];
 
 // ========================================
 // USUÁRIO
@@ -54,6 +52,10 @@ async function carregar() {
         div.style.cursor = "not-allowed";
       }
 
+      if (selecionados.includes(n.numero)) {
+        div.classList.add("selecionado");
+      }
+
       div.onclick = (e) => selecionar(n, e);
 
       grid.appendChild(div);
@@ -66,7 +68,7 @@ async function carregar() {
 }
 
 // ========================================
-// SELECIONAR
+// SELECIONAR / DESMARCAR
 // ========================================
 function selecionar(n, e) {
   if (n.status !== "disponivel") {
@@ -74,19 +76,19 @@ function selecionar(n, e) {
     return;
   }
 
-  document
-    .querySelectorAll(".numero")
-    .forEach((el) => {
-      el.classList.remove("selecionado");
-    });
+  const index = selecionados.indexOf(n.numero);
 
-  e.target.classList.add("selecionado");
+  // se já estiver selecionado → desmarca
+  if (index > -1) {
+    selecionados.splice(index, 1);
+    e.target.classList.remove("selecionado");
+  } else {
+    // se não estiver → marca
+    selecionados.push(n.numero);
+    e.target.classList.add("selecionado");
+  }
 
-  selecionado = n.numero;
-
-  document.getElementById(
-    "selecionado-texto"
-  ).innerText = `Número selecionado: ${n.numero}`;
+  atualizarTextoSelecionados();
 
   document
     .getElementById("pagamento")
@@ -94,6 +96,19 @@ function selecionar(n, e) {
 
   document.getElementById("qr").src = "";
   document.getElementById("pixCode").value = "";
+}
+
+function atualizarTextoSelecionados() {
+  const texto = document.getElementById(
+    "selecionado-texto"
+  );
+
+  if (selecionados.length === 0) {
+    texto.innerText = "Nenhum número selecionado";
+    return;
+  }
+
+  texto.innerText = `Números selecionados: ${selecionados.join(", ")}`;
 }
 
 // ========================================
@@ -106,51 +121,56 @@ async function comprar() {
   btn.innerText = "Processando...";
 
   try {
-    if (!selecionado) {
-      mostrarErro("Escolha um número");
+    if (selecionados.length === 0) {
+      mostrarErro("Escolha pelo menos um número");
       return;
     }
 
-    const res = await fetch(`${API}/reservar`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        numero: Number(selecionado),
-        nome: usuario.nome,
-        telefone: usuario.telefone,
-        email: usuario.email,
-        rifa_id: usuario.rifa
-      })
-    });
+    let ultimoPagamento = null;
 
-    const data = await res.json();
+    // Opção B → uma reserva por número
+    for (const numero of selecionados) {
+      const res = await fetch(`${API}/reservar`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          numero: Number(numero),
+          nome: usuario.nome,
+          telefone: usuario.telefone,
+          email: usuario.email,
+          rifa_id: usuario.rifa
+        })
+      });
 
-    if (!res.ok) {
-      throw new Error(
-        data.error || "Erro ao reservar número"
-      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(
+          `Erro no número ${numero}: ${data.error || "Falha ao reservar"}`
+        );
+      }
+
+      // guarda último retorno para exibir QR
+      ultimoPagamento = data;
     }
 
-    // mostrar área de pagamento
-    document
-      .getElementById("pagamento")
-      .classList.remove("hidden");
+    if (ultimoPagamento) {
+      document
+        .getElementById("pagamento")
+        .classList.remove("hidden");
 
-    // QR visual
-    document.getElementById("qr").src =
-      "data:image/png;base64," +
-      data.qr_code_base64;
+      document.getElementById("qr").src =
+        "data:image/png;base64," +
+        ultimoPagamento.qr_code_base64;
 
-    // PIX copia e cola
-    document.getElementById("pixCode").value =
-      data.qr_code || "";
+      document.getElementById("pixCode").value =
+        ultimoPagamento.qr_code || "";
+    }
 
-    // atualizar grid
     await carregar();
 
-    // scroll suave
     document
       .getElementById("pagamento")
       .scrollIntoView({
@@ -198,19 +218,16 @@ function voltar() {
 }
 
 // ========================================
-// ERRO UI
+// ERRO
 // ========================================
 function mostrarErro(msg) {
-  const el = document.getElementById("erro");
-
-  el.innerText = msg;
+  const erro = document.getElementById("erro");
+  erro.innerText = msg;
 
   setTimeout(() => {
-    el.innerText = "";
+    erro.innerText = "";
   }, 4000);
 }
 
-// ========================================
-// START
-// ========================================
+// iniciar
 carregar();
