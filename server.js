@@ -5,7 +5,6 @@ const { MercadoPagoConfig, Payment } = require("mercadopago");
 const supabase = require("./supabase");
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
@@ -14,36 +13,8 @@ const client = new MercadoPagoConfig({
 });
 
 const payment = new Payment(client);
+const TEMPO_RESERVA = 10 * 60 * 1000;
 
-const TEMPO_RESERVA = 10 * 60 * 1000; // 10 minutos
-
-// ========================================
-// LISTAR RIFAS
-// ========================================
-app.get("/rifas", async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("rifas")
-      .select("*")
-      .eq("ativa", true)
-      .order("nome");
-
-    if (error) {
-      return res.status(500).json({
-        error: "Erro ao carregar rifas"
-      });
-    }
-
-    res.json(data);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erro interno" });
-  }
-});
-
-// ========================================
-// LIBERAR RESERVAS EXPIRADAS
-// ========================================
 async function liberarReservasExpiradas() {
   try {
     const limite = new Date(Date.now() - TEMPO_RESERVA);
@@ -60,15 +31,11 @@ async function liberarReservasExpiradas() {
       })
       .eq("status", "reservado")
       .lt("reservado_em", limite.toISOString());
-
   } catch (err) {
     console.error(err);
   }
 }
 
-// ========================================
-// LISTAR NÚMEROS
-// ========================================
 app.get("/numeros/:rifaId", async (req, res) => {
   try {
     const { rifaId } = req.params;
@@ -94,36 +61,15 @@ app.get("/numeros/:rifaId", async (req, res) => {
   }
 });
 
-// ========================================
-// RESERVAR VÁRIOS + GERAR 1 PIX
-// ========================================
 app.post("/reservar", async (req, res) => {
   try {
     await liberarReservasExpiradas();
 
-    let {
-      numeros,
-      nome,
-      telefone,
-      email,
-      rifa_id
-    } = req.body;
+    let { numeros, nome, telefone, email, rifa_id } = req.body;
 
     if (!Array.isArray(numeros) || numeros.length === 0) {
       return res.status(400).json({
         error: "Selecione pelo menos um número"
-      });
-    }
-
-    if (!nome || nome.trim().length < 3) {
-      return res.status(400).json({
-        error: "Nome inválido"
-      });
-    }
-
-    if (!email || !email.includes("@")) {
-      return res.status(400).json({
-        error: "Email inválido"
       });
     }
 
@@ -134,25 +80,17 @@ app.post("/reservar", async (req, res) => {
       .single();
 
     if (erroRifa || !rifa) {
-      return res.status(400).json({
-        error: "Rifa inválida"
-      });
+      return res.status(400).json({ error: "Rifa inválida" });
     }
 
-    // ========================================
-    // RESERVAR TODOS OS NÚMEROS
-    // ========================================
     for (const numero of numeros) {
-      const { data, error } = await supabase.rpc(
-        "reservar_numero",
-        {
-          p_email: email.trim().toLowerCase(),
-          p_nome: nome.trim(),
-          p_numero: Number(numero),
-          p_rifa_id: rifa_id,
-          p_telefone: (telefone || "").trim()
-        }
-      );
+      const { data, error } = await supabase.rpc("reservar_numero", {
+        p_email: email.trim().toLowerCase(),
+        p_nome: nome.trim(),
+        p_numero: Number(numero),
+        p_rifa_id: rifa_id,
+        p_telefone: (telefone || "").trim()
+      });
 
       if (error || !data || !data[0]?.success) {
         return res.status(400).json({
@@ -161,15 +99,8 @@ app.post("/reservar", async (req, res) => {
       }
     }
 
-    // ========================================
-    // VALOR TOTAL
-    // ========================================
-    const valorTotal =
-      Number(rifa.valor) * numeros.length;
+    const valorTotal = Number(rifa.valor) * numeros.length;
 
-    // ========================================
-    // GERAR 1 PIX TOTAL
-    // ========================================
     const pagamento = await payment.create({
       body: {
         transaction_amount: valorTotal,
@@ -184,36 +115,23 @@ app.post("/reservar", async (req, res) => {
 
     const paymentId = pagamento.id;
 
-    // ========================================
-    // SALVAR PAYMENT_ID EM TODOS
-    // ========================================
     for (const numero of numeros) {
       await supabase
         .from("rifa_numeros")
-        .update({
-          payment_id: paymentId
-        })
+        .update({ payment_id: paymentId })
         .eq("rifa_id", rifa_id)
         .eq("numero", Number(numero));
     }
 
-    // ========================================
-    // RESPOSTA
-    // ========================================
     res.json({
       success: true,
-      valor_total: valorTotal,
       numeros,
+      valor_total: valorTotal,
       qr_code_base64:
-        pagamento.point_of_interaction
-          ?.transaction_data
-          ?.qr_code_base64 || "",
+        pagamento.point_of_interaction?.transaction_data?.qr_code_base64 || "",
       qr_code:
-        pagamento.point_of_interaction
-          ?.transaction_data
-          ?.qr_code || ""
+        pagamento.point_of_interaction?.transaction_data?.qr_code || ""
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({
@@ -223,7 +141,6 @@ app.post("/reservar", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
