@@ -1,37 +1,115 @@
-body {
-  font-family: Arial, sans-serif;
-  background: #f5f5f5;
+/* RESET */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-.container {
-  max-width: 500px;
-  margin: auto;
+/* BODY */
+body {
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #28a745, #218838);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 20px;
 }
 
+/* CONTAINER PRINCIPAL */
+.container {
+  width: 100%;
+  max-width: 700px;
+  background: #ffffff;
+  padding: 32px 28px;
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+  animation: fadeIn 0.4s ease;
+}
+
+/* ANIMAÇÃO */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* TÍTULOS */
 h1 {
   text-align: center;
+  color: #1f2937;
+  font-size: 28px;
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+h2 {
+  text-align: center;
+  color: #28a745;
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+h3 {
+  text-align: center;
+  color: #666;
+  font-size: 15px;
+  margin-bottom: 20px;
 }
 
 .descricao {
   text-align: center;
   color: #666;
+  margin-bottom: 20px;
+  font-size: 15px;
 }
 
+/* INFO USUÁRIO */
+.user-info {
+  text-align: left;
+  margin-bottom: 18px;
+  font-size: 14px;
+  color: #444;
+}
+
+.user-info p {
+  margin-bottom: 6px;
+}
+
+/* BOTÃO VOLTAR */
+.btn-voltar {
+  margin-top: 8px;
+  background: #f8f9fa;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.btn-voltar:hover {
+  background: #eeeeee;
+}
+
+/* GRID DOS NÚMEROS */
 #grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
-  gap: 8px;
-  margin: 20px 0;
+  grid-template-columns: repeat(auto-fit, minmax(55px, 1fr));
+  gap: 10px;
+  margin: 24px 0;
 }
 
 .numero {
   background: #d4edda;
-  padding: 12px;
+  padding: 14px;
   text-align: center;
-  border-radius: 8px;
+  border-radius: 12px;
   font-weight: bold;
   cursor: pointer;
+  transition: 0.2s ease;
+  user-select: none;
 }
 
 .numero:hover {
@@ -45,6 +123,7 @@ h1 {
 
 .reservado {
   background: #ffc107;
+  color: #333;
 }
 
 .selecionado {
@@ -52,145 +131,146 @@ h1 {
   color: white;
 }
 
-/* ===== INPUTS ===== */
-.form-box input {
-  width: 100%;
-  padding: 14px 12px;
-  margin: 10px 0;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-  font-size: 15px;
-  outline: none;
-  transition: all 0.2s ease;
-  background: #fff;
+/* LEGENDA */
+.legenda {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 18px 0;
 }
 
-/* foco (quando clica) */
-.form-box input:focus {
-  border-color: #28a745;
-  box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.15);
-}
-
-/* placeholder mais suave */
-.form-box input::placeholder {
-  color: #999;
-}
-
-/* erro visual (opcional se quiser usar depois) */
-.input-erro {
-  border-color: #dc3545 !important;
-  background: #fff5f5;
-}
-
-.form-box label {
+.legenda span {
+  padding: 8px 14px;
+  border-radius: 12px;
   font-size: 13px;
-  color: #555;
-  display: block;
-  margin-top: 10px;
+  font-weight: bold;
 }
 
-/* ===== BOTÃO PRINCIPAL ===== */
+.disp {
+  background: #d4edda;
+  color: #155724;
+}
+
+.res {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.vend {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* BOX DE SELEÇÃO */
+.selecionado-box {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  padding: 16px;
+  border-radius: 14px;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #374151;
+}
+
+/* BOTÕES */
 button {
   width: 100%;
-  padding: 16px;
+  padding: 8px;
   background: linear-gradient(135deg, #28a745, #218838);
-  color: #fff;
+  color: white;
   font-size: 16px;
   font-weight: bold;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: 0.25s ease;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
 }
 
-/* hover (desktop) */
 button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
 }
 
-/* clique */
 button:active {
   transform: scale(0.98);
 }
 
-/* desabilitado */
 button:disabled {
   background: #ccc;
   cursor: not-allowed;
   box-shadow: none;
 }
 
-/* versão carregando (opcional) */
-button.loading {
-  background: #999;
-}
-
-
-/* ===== LEGENDA ===== */
-.legenda {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  margin: 15px 0;
-  flex-wrap: wrap;
-}
-
-.legenda span {
-  padding: 6px 12px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: bold;
-}
-
-/* disponível */
-.disp {
-  background: #d4edda;
-  color: #155724;
-}
-
-/* reservado */
-.res {
-  background: #ffc107;
-  color: #856404;
-}
-
-/* pago */
-.vend {
-  background: #dc3545;
-  color: #fff;
-}
-
-
-.user-info {
+/* ERRO */
+.erro {
+  margin-top: 12px;
+  color: #dc3545;
   text-align: center;
-  margin-bottom: 10px;
-  font-size: 14px;
-  color: #444;
+  font-weight: 500;
 }
 
-.hidden {
-  display: none;
+/* PAGAMENTO PIX */
+.pagamento {
+  margin-top: 30px;
+  padding: 24px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  text-align: center;
 }
 
+.pagamento img {
+  margin: 18px 0;
+  border-radius: 12px;
+}
 
+/* PIX COPIA E COLA */
 .pix-copia-cola {
   margin-top: 20px;
 }
 
 .pix-copia-cola textarea {
   width: 100%;
-  padding: 12px;
-  border-radius: 10px;
+  padding: 14px;
+  border-radius: 12px;
   border: 1px solid #ccc;
   resize: none;
   font-size: 14px;
-  margin-top: 8px;
-  margin-bottom: 10px;
+  margin-top: 10px;
 }
 
 .btn-copiar {
-  width: 100%;
+  margin-top: 14px;
+}
+
+.aguardando {
+  margin-top: 18px;
+  font-weight: 600;
+  color: #28a745;
+}
+
+/* HIDDEN */
+.hidden {
+  display: none;
+}
+
+/* RESPONSIVO */
+@media (max-width: 768px) {
+  .container {
+    padding: 24px 18px;
+  }
+
+  h1 {
+    font-size: 22px;
+  }
+
+  #grid {
+    grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
+  }
+
+  .numero {
+    padding: 12px;
+    font-size: 14px;
+  }
 }

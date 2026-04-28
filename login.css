@@ -58,7 +58,73 @@ body {
   transition: all 0.2s ease;
   background: #fff;
 }
+/* SELECT MELHORADO */
+/* SELECT PREMIUM */
+.container select {
+  width: 100%;
+  padding: 18px 16px;
+  margin: 14px 0;
+  border: 2px solid #e5e7eb;
+  border-radius: 16px;
+  background: #f9fafb;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
 
+  /* seta mais elegante */
+  background-image: url("data:image/svg+xml;utf8,<svg fill='%2328a745' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 18px center;
+  background-size: 20px;
+
+  padding-right: 55px;
+}
+
+/* hover */
+.container select:hover {
+  border-color: #28a745;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(40, 167, 69, 0.08);
+}
+
+/* foco */
+.container select:focus {
+  border-color: #28a745;
+  background: #ffffff;
+  box-shadow: 0 0 0 5px rgba(40, 167, 69, 0.12);
+  transform: translateY(-1px);
+}
+
+/* placeholder visual */
+.container select:invalid {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+/* opções */
+.container select option {
+  color: #111827;
+  background: #ffffff;
+  font-size: 15px;
+  padding: 12px;
+}
+
+/* LABEL OPCIONAL */
+.label-rifa {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-top: 8px;
+  margin-bottom: 6px;
+  display: block;
+}
 /* FOCO */
 .container input:focus,
 .container select:focus {

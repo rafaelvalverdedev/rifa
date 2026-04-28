@@ -11,7 +11,7 @@ if (!usuario || !usuario.rifa) {
 
 document.getElementById("userNome").innerText = usuario.nome;
 document.getElementById("userEmail").innerText = usuario.email;
-
+document.getElementById("userTelefone").innerText = usuario.telefone;
 async function carregar() {
   try {
     const res = await fetch(`${API}/numeros/${usuario.rifa}`);
@@ -140,10 +140,23 @@ function copiarPix() {
     return;
   }
 
-  navigator.clipboard
-    .writeText(campo.value)
-    .then(() => alert("Código PIX copiado com sucesso!"))
-    .catch(() => mostrarErro("Erro ao copiar código PIX"));
+  campo.removeAttribute("readonly");
+  campo.select();
+  campo.setSelectionRange(0, 99999); // mobile
+
+  try {
+    const copiado = document.execCommand("copy");
+
+    if (copiado) {
+      alert("Código PIX copiado com sucesso!");
+    } else {
+      mostrarErro("Não foi possível copiar o código PIX");
+    }
+  } catch (err) {
+    mostrarErro("Erro ao copiar código PIX");
+  }
+
+  campo.setAttribute("readonly", true);
 }
 
 function voltar() {
