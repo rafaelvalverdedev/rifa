@@ -142,3 +142,21 @@ button:active {
 .hidden {
   display: none;
 }
+
+
+
+
+.titulo-rifa {
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  color: #2c3e50;
+  background: linear-gradient(to right, #f8f9fa, #e3f2fd);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  margin: 20px auto;
+  max-width: 900px;
+  line-height: 1.4;
+  border-left: 6px solid #27ae60;
+}
