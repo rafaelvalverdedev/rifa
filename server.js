@@ -36,6 +36,28 @@ async function liberarReservasExpiradas() {
   }
 }
 
+app.get("/rifas", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("rifas")
+      .select("*")
+      .order("id", { ascending: true });
+
+    if (error) {
+      return res.status(500).json({
+        error: "Erro ao carregar rifas"
+      });
+    }
+
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: "Erro interno"
+    });
+  }
+});
+
 app.get("/numeros/:rifaId", async (req, res) => {
   try {
     const { rifaId } = req.params;
