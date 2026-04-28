@@ -162,6 +162,52 @@ app.post("/reservar", async (req, res) => {
   }
 });
 
+
+app.post("/webhook", async (req, res) => {
+  try {
+    console.log("Webhook recebido:", req.body);
+
+    const paymentId =
+      req.body?.data?.id ||
+      req.body?.id;
+
+    if (!paymentId) {
+      return res.status(200).send("ok");
+    }
+
+    const pagamentoDetalhado = await payment.get({
+      id: Number(paymentId)
+    });
+
+    const status = pagamentoDetalhado.status;
+
+    console.log("Payment ID:", paymentId);
+    console.log("Status:", status);
+
+    if (status === "approved") {
+      const { error } = await supabase
+        .from("rifa_numeros")
+        .update({
+          status: "pago"
+        })
+        .eq("payment_id", Number(paymentId));
+
+      if (error) {
+        console.error("Erro ao atualizar pagamento:", error);
+      } else {
+        console.log("Pagamento confirmado com sucesso");
+      }
+    }
+
+    res.status(200).send("ok");
+  } catch (err) {
+    console.error("Erro no webhook:", err);
+    res.status(500).send("erro");
+  }
+});
+
+
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);

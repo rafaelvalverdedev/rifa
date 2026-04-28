@@ -244,6 +244,11 @@ button:disabled {
   margin-top: 14px;
 }
 
+.detalhes {
+  margin-top: 18px;
+  font-weight: 600;
+  color: #a74628;
+}
 .aguardando {
   margin-top: 18px;
   font-weight: 600;
