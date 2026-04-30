@@ -3,7 +3,6 @@ const express = require("express");
 const cors = require("cors");
 const { MercadoPagoConfig, Payment } = require("mercadopago");
 const supabase = require("./supabase");
-const { Resend } = require("resend");
 
 const app = express();
 app.use(cors());
@@ -18,7 +17,6 @@ const client = new MercadoPagoConfig({
 });
 
 const payment = new Payment(client);
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 const TEMPO_RESERVA = 10 * 60 * 1000;
 
@@ -47,34 +45,50 @@ async function liberarReservasExpiradas() {
   }
 }
 
+const nodemailer = require("nodemailer");
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "rafaelvalverde.dev@gmail.com",
+    pass: "hbqy iutb rpzn ezsq"
+  }
+});
+
 async function enviarEmailConfirmacao(numeros) {
   try {
     const cliente = numeros[0];
     const listaNumeros = numeros.map(n => n.numero).join(", ");
 
-    await resend.emails.send({
-      from: "Rifa <onboarding@resend.dev>", // troque depois por domínio próprio
+    await transporter.sendMail({
+      from: '"Rifa Online" <rafaelvalverde.dev@gmail.com>',
       to: cliente.email,
       subject: "Pagamento confirmado 🎉",
       html: `
-        <h2>Pagamento confirmado com sucesso!</h2>
-
+        <h2>Pagamento confirmado!</h2>
         <p>Olá, ${cliente.nome}</p>
-
-        <p>Seu pagamento foi aprovado.</p>
-
-        <p><strong>Números comprados:</strong> ${listaNumeros}</p>
-
-        <p>Boa sorte no sorteio 🍀</p>
+        <p>Números: ${listaNumeros}</p>
+        <p>Boa sorte 🍀</p>
       `
     });
 
-    console.log("Email enviado:", cliente.email);
+    console.log("📧 Email enviado com Gmail");
 
   } catch (err) {
-    console.error("Erro ao enviar email:", err);
+    console.error("❌ Erro ao enviar email:", err);
   }
 }
+// Rota de teste para enviar email
+app.get("/teste-email", async (req, res) => {
+  await transporter.sendMail({
+    from: "rafaelvalverde.dev@gmail.com",
+    to: "rafaelvalverde.dev@gmail.com",
+    subject: "Teste",
+    text: "Funcionando"
+  });
+
+  res.send("ok");
+});
 
 /* =========================
    ROTAS
