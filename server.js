@@ -198,14 +198,16 @@ app.post("/reservar", async (req, res) => {
 /* =========================
    WEBHOOK (PAGAMENTO)
 ========================= */
-
 app.post("/webhook", async (req, res) => {
   try {
-    console.log("Webhook recebido:", req.body);
+    console.log("🔥 WEBHOOK DISPARADO");
+    console.log("Body:", req.body);
 
     const paymentId =
       req.body?.data?.id ||
       req.body?.id;
+
+    console.log("Payment ID recebido:", paymentId);
 
     if (!paymentId) {
       return res.status(200).send("ok");
@@ -214,20 +216,20 @@ app.post("/webhook", async (req, res) => {
     let pagamentoDetalhado;
 
     try {
-      pagamentoDetalhado = await payment.get({
-        id: Number(paymentId)
-      });
+      pagamentoDetalhado = await payment.get(paymentId);
     } catch (err) {
       console.log("❌ Erro ao buscar pagamento:", err.message);
-      return res.status(200).send("ignorado");
+      return res.status(200).send("erro ao buscar pagamento");
     }
 
-    const status = pagamentoDetalhado.status;
+    const status =
+      pagamentoDetalhado.status ||
+      pagamentoDetalhado.body?.status;
 
     console.log("Status:", status);
 
     if (status !== "approved") {
-      return res.status(200).send("ok");
+      return res.status(200).send("não aprovado");
     }
 
     const { data: numeros } = await supabase
@@ -235,28 +237,29 @@ app.post("/webhook", async (req, res) => {
       .select("*")
       .eq("payment_id", paymentId);
 
+    console.log("Numeros encontrados:", numeros?.length);
+
     if (!numeros || numeros.length === 0) {
-      return res.status(200).send("ok");
+      return res.status(200).send("sem numeros");
     }
 
-    // 🚫 evita duplicação
     if (numeros[0].status === "pago") {
       return res.status(200).send("já processado");
     }
 
-    // ✅ marca como pago
     await supabase
       .from("rifa_numeros")
       .update({ status: "pago" })
       .eq("payment_id", paymentId);
 
-    // 📧 envia email
     await enviarEmailConfirmacao(numeros);
+
+    console.log("✅ Pagamento confirmado + email enviado");
 
     res.status(200).send("ok");
 
   } catch (err) {
-    console.error(err);
+    console.error("🔥 ERRO GERAL:", err);
     res.status(500).send("erro");
   }
 });
