@@ -1,6 +1,7 @@
 const API = "https://rifa-baxs.onrender.com";
 
 let selecionados = [];
+let intervaloAtualizacao = null;
 
 const usuario = JSON.parse(sessionStorage.getItem("usuario"));
 
@@ -12,6 +13,11 @@ if (!usuario || !usuario.rifa) {
 document.getElementById("userNome").innerText = usuario.nome;
 document.getElementById("userEmail").innerText = usuario.email;
 document.getElementById("userTelefone").innerText = usuario.telefone;
+
+/* =========================
+   CARREGAR NÚMEROS
+========================= */
+
 async function carregar() {
   try {
     const res = await fetch(`${API}/numeros/${usuario.rifa}`);
@@ -20,12 +26,20 @@ async function carregar() {
     const grid = document.getElementById("grid");
     grid.innerHTML = "";
 
+    let pagamentoConfirmado = false;
+
     numeros.forEach((n) => {
       const div = document.createElement("div");
       div.innerText = n.numero;
       div.className = "numero";
 
-      if (n.status === "pago") div.classList.add("vendido");
+      if (n.status === "pago") {
+        div.classList.add("vendido");
+        if (n.email === usuario.email) {
+          pagamentoConfirmado = true;
+        }
+      }
+
       if (n.status === "reservado") div.classList.add("reservado");
 
       if (n.status !== "disponivel") {
@@ -39,11 +53,22 @@ async function carregar() {
       div.onclick = (e) => selecionar(n, e);
       grid.appendChild(div);
     });
+
+    // 🔥 se detectou pagamento confirmado → parar atualização
+    if (pagamentoConfirmado) {
+      pararAtualizacao();
+      mostrarConfirmacao();
+    }
+
   } catch (err) {
     console.error(err);
     mostrarErro("Erro ao carregar números");
   }
 }
+
+/* =========================
+   SELECIONAR
+========================= */
 
 function selecionar(n, e) {
   if (n.status !== "disponivel") {
@@ -68,6 +93,10 @@ function selecionar(n, e) {
   document.getElementById("pixCode").value = "";
 }
 
+/* =========================
+   TEXTO
+========================= */
+
 function atualizarTextoSelecionados() {
   const texto = document.getElementById("selecionado-texto");
 
@@ -78,6 +107,10 @@ function atualizarTextoSelecionados() {
 
   texto.innerText = `Números selecionados: ${selecionados.join(", ")}`;
 }
+
+/* =========================
+   COMPRAR
+========================= */
 
 async function comprar() {
   const btn = document.getElementById("btnComprar");
@@ -120,9 +153,13 @@ async function comprar() {
 
     await carregar();
 
+    // 🔥 começa monitoramento automático
+    iniciarAtualizacao();
+
     document.getElementById("pagamento").scrollIntoView({
       behavior: "smooth"
     });
+
   } catch (err) {
     console.error(err);
     mostrarErro(err.message);
@@ -131,6 +168,44 @@ async function comprar() {
     btn.innerText = "Continuar para pagamento";
   }
 }
+
+/* =========================
+   MONITORAMENTO
+========================= */
+
+function iniciarAtualizacao() {
+  if (intervaloAtualizacao) return;
+
+  intervaloAtualizacao = setInterval(() => {
+    console.log("🔄 Verificando pagamento...");
+    carregar();
+  }, 4000);
+}
+
+function pararAtualizacao() {
+  if (intervaloAtualizacao) {
+    clearInterval(intervaloAtualizacao);
+    intervaloAtualizacao = null;
+    console.log("⛔ Atualização parada");
+  }
+}
+
+/* =========================
+   UI CONFIRMAÇÃO
+========================= */
+
+function mostrarConfirmacao() {
+  const box = document.querySelector(".aguardando");
+
+  if (box) {
+    box.innerText = "✅ Pagamento confirmado!";
+    box.style.color = "green";
+  }
+}
+
+/* =========================
+   COPIAR PIX
+========================= */
 
 function copiarPix() {
   const campo = document.getElementById("pixCode");
@@ -142,35 +217,21 @@ function copiarPix() {
 
   campo.removeAttribute("readonly");
   campo.select();
-  campo.setSelectionRange(0, 99999); // mobile
+  campo.setSelectionRange(0, 99999);
 
   try {
-    const copiado = document.execCommand("copy");
-
-    if (copiado) {
-      alert("Código PIX copiado com sucesso!");
-    } else {
-      mostrarErro("Não foi possível copiar o código PIX");
-    }
+    document.execCommand("copy");
+    alert("Código PIX copiado!");
   } catch (err) {
-    mostrarErro("Erro ao copiar código PIX");
+    console.error(err);
+    mostrarErro("Erro ao copiar");
   }
 
   campo.setAttribute("readonly", true);
 }
 
-function voltar() {
-  sessionStorage.clear();
-  window.location.href = "login.html";
-}
-
-function mostrarErro(msg) {
-  const erro = document.getElementById("erro");
-  erro.innerText = msg;
-
-  setTimeout(() => {
-    erro.innerText = "";
-  }, 4000);
-}
+/* =========================
+   INICIAL
+========================= */
 
 carregar();
