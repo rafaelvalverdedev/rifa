@@ -4,6 +4,8 @@ const cors = require("cors");
 const { MercadoPagoConfig, Payment } = require("mercadopago");
 const supabase = require("./supabase");
 
+const { Resend } = require("resend");
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -135,6 +137,10 @@ app.post("/reservar", async (req, res) => {
       }
     });
 
+     console.log("Pagamento criado:", pagamento);
+     console.log("ID do pagamento:", pagamento.id);
+     console.log("Atualizando a página");
+     
     const paymentId = pagamento.id;
 
     for (const numero of numeros) {
@@ -206,6 +212,27 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
+app.post("/send-email", async (req, res) => {
+  try {
+    const { to, subject, message } = req.body;
+
+    const data = await resend.emails.send({
+      from: "Sistema <onboarding@resend.dev>",
+      to,
+      subject,
+      html: `
+        <div style="font-family: Arial">
+          <h2>${subject}</h2>
+          <p>${message}</p>
+        </div>
+      `
+    });
+
+    return res.json({ success: true, data });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 
 const PORT = process.env.PORT || 3000;
