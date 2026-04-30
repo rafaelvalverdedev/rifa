@@ -217,14 +217,21 @@ app.post("/webhook", async (req, res) => {
     console.log("🔥 WEBHOOK DISPARADO");
     console.log("Body:", req.body);
 
-    if (req.body?.action !== "payment.updated") {
+    // ✔ aceitar todos formatos de webhook do MP
+    if (
+      req.body?.type !== "payment" &&
+      req.body?.topic !== "payment" &&
+      !req.body?.data?.id &&
+      !req.body?.resource
+    ) {
       return res.status(200).send("ignorado");
     }
 
-    const paymentId =
+    const paymentId = String(
       req.body?.data?.id ||
       req.body?.id ||
-      req.body?.resource;
+      req.body?.resource
+    );
 
     console.log("Payment ID recebido:", paymentId);
 
@@ -258,6 +265,8 @@ app.post("/webhook", async (req, res) => {
       .select("*")
       .eq("payment_id", paymentId);
 
+    console.log("Numeros encontrados:", numeros?.length);
+
     if (!numeros || numeros.length === 0) {
       return res.status(200).send("ignorado");
     }
@@ -271,9 +280,11 @@ app.post("/webhook", async (req, res) => {
       .update({ status: "pago" })
       .eq("payment_id", paymentId);
 
+    console.log("📧 Vai enviar email para:", numeros[0].email);
+
     await enviarEmailConfirmacao(numeros);
 
-    console.log("✅ PAGAMENTO CONFIRMADO");
+    console.log("✅ PAGAMENTO CONFIRMADO + EMAIL");
 
     res.status(200).send("ok");
 
