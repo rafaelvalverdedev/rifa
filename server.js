@@ -223,9 +223,7 @@ app.post("/webhook", async (req, res) => {
       return res.status(200).send("erro mp");
     }
 
-    const status =
-      pagamentoDetalhado.body?.status ||
-      pagamentoDetalhado.status;
+    const status = pagamentoDetalhado.body?.status;
 
     console.log("Status:", status);
 
@@ -233,16 +231,18 @@ app.post("/webhook", async (req, res) => {
       return res.status(200).send("não aprovado");
     }
 
+    // 🔥 BUSCAR SOMENTE SE EXISTE NO SEU BANCO
     const { data: numeros } = await supabase
       .from("rifa_numeros")
       .select("*")
       .eq("payment_id", paymentId);
 
-    console.log("Numeros encontrados:", numeros?.length);
-
     if (!numeros || numeros.length === 0) {
-      return res.status(200).send("sem numeros");
+      console.log("⚠️ Pagamento não pertence ao sistema");
+      return res.status(200).send("ignorado");
     }
+
+    console.log("Numeros encontrados:", numeros.length);
 
     if (numeros[0].status === "pago") {
       return res.status(200).send("já processado");
@@ -255,7 +255,7 @@ app.post("/webhook", async (req, res) => {
 
     await enviarEmailConfirmacao(numeros);
 
-    console.log("✅ Pagamento confirmado + email enviado");
+    console.log("✅ PAGAMENTO CONFIRMADO + EMAIL ENVIADO");
 
     res.status(200).send("ok");
 
