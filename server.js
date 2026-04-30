@@ -3,19 +3,28 @@ const express = require("express");
 const cors = require("cors");
 const { MercadoPagoConfig, Payment } = require("mercadopago");
 const supabase = require("./supabase");
-
 const { Resend } = require("resend");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+/* =========================
+   CONFIGS
+========================= */
+
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN
 });
 
 const payment = new Payment(client);
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 const TEMPO_RESERVA = 10 * 60 * 1000;
+
+/* =========================
+   FUNÇÕES AUXILIARES
+========================= */
 
 async function liberarReservasExpiradas() {
   try {
@@ -38,6 +47,39 @@ async function liberarReservasExpiradas() {
   }
 }
 
+async function enviarEmailConfirmacao(numeros) {
+  try {
+    const cliente = numeros[0];
+    const listaNumeros = numeros.map(n => n.numero).join(", ");
+
+    await resend.emails.send({
+      from: "Rifa <onboarding@resend.dev>", // troque depois por domínio próprio
+      to: cliente.email,
+      subject: "Pagamento confirmado 🎉",
+      html: `
+        <h2>Pagamento confirmado com sucesso!</h2>
+
+        <p>Olá, ${cliente.nome}</p>
+
+        <p>Seu pagamento foi aprovado.</p>
+
+        <p><strong>Números comprados:</strong> ${listaNumeros}</p>
+
+        <p>Boa sorte no sorteio 🍀</p>
+      `
+    });
+
+    console.log("Email enviado:", cliente.email);
+
+  } catch (err) {
+    console.error("Erro ao enviar email:", err);
+  }
+}
+
+/* =========================
+   ROTAS
+========================= */
+
 app.get("/rifas", async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -46,17 +88,13 @@ app.get("/rifas", async (req, res) => {
       .order("id", { ascending: true });
 
     if (error) {
-      return res.status(500).json({
-        error: "Erro ao carregar rifas"
-      });
+      return res.status(500).json({ error: "Erro ao carregar rifas" });
     }
 
     res.json(data);
   } catch (err) {
     console.error(err);
-    res.status(500).json({
-      error: "Erro interno"
-    });
+    res.status(500).json({ error: "Erro interno" });
   }
 });
 
@@ -73,9 +111,7 @@ app.get("/numeros/:rifaId", async (req, res) => {
       .order("numero", { ascending: true });
 
     if (error) {
-      return res.status(500).json({
-        error: "Erro ao carregar números"
-      });
+      return res.status(500).json({ error: "Erro ao carregar números" });
     }
 
     res.json(data);
@@ -97,26 +133,22 @@ app.post("/reservar", async (req, res) => {
       });
     }
 
-    const { data: rifa, error: erroRifa } = await supabase
+    const { data: rifa } = await supabase
       .from("rifas")
       .select("*")
       .eq("id", rifa_id)
       .single();
 
-    if (erroRifa || !rifa) {
-      return res.status(400).json({ error: "Rifa inválida" });
-    }
-
     for (const numero of numeros) {
-      const { data, error } = await supabase.rpc("reservar_numero", {
+      const { data } = await supabase.rpc("reservar_numero", {
         p_email: email.trim().toLowerCase(),
         p_nome: nome.trim(),
         p_numero: Number(numero),
         p_rifa_id: rifa_id,
-        p_telefone: (telefone || "").trim()
+        p_telefone: telefone
       });
 
-      if (error || !data || !data[0]?.success) {
+      if (!data || !data[0]?.success) {
         return res.status(400).json({
           error: `Número ${numero} indisponível`
         });
@@ -137,10 +169,6 @@ app.post("/reservar", async (req, res) => {
       }
     });
 
-     console.log("Pagamento criado:", pagamento);
-     console.log("ID do pagamento:", pagamento.id);
-     console.log("Atualizando a página");
-     
     const paymentId = pagamento.id;
 
     for (const numero of numeros) {
@@ -160,14 +188,16 @@ app.post("/reservar", async (req, res) => {
       qr_code:
         pagamento.point_of_interaction?.transaction_data?.qr_code || ""
     });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({
-      error: "Erro ao gerar pagamento"
-    });
+    res.status(500).json({ error: "Erro ao gerar pagamento" });
   }
 });
 
+/* =========================
+   WEBHOOK (PAGAMENTO)
+========================= */
 
 app.post("/webhook", async (req, res) => {
   try {
@@ -187,55 +217,49 @@ app.post("/webhook", async (req, res) => {
 
     const status = pagamentoDetalhado.status;
 
-    console.log("Payment ID:", paymentId);
     console.log("Status:", status);
 
-    if (status === "approved") {
-      const { error } = await supabase
-        .from("rifa_numeros")
-        .update({
-          status: "pago"
-        })
-        .eq("payment_id", Number(paymentId));
-
-      if (error) {
-        console.error("Erro ao atualizar pagamento:", error);
-      } else {
-        console.log("Pagamento confirmado com sucesso");
-      }
+    if (status !== "approved") {
+      return res.status(200).send("ok");
     }
 
+    const { data: numeros } = await supabase
+      .from("rifa_numeros")
+      .select("*")
+      .eq("payment_id", paymentId);
+
+    if (!numeros || numeros.length === 0) {
+      return res.status(200).send("ok");
+    }
+
+    // 🚫 evita duplicação
+    if (numeros[0].status === "pago") {
+      return res.status(200).send("já processado");
+    }
+
+    // ✅ marca como pago
+    await supabase
+      .from("rifa_numeros")
+      .update({ status: "pago" })
+      .eq("payment_id", paymentId);
+
+    // 📧 envia email
+    await enviarEmailConfirmacao(numeros);
+
     res.status(200).send("ok");
+
   } catch (err) {
-    console.error("Erro no webhook:", err);
+    console.error(err);
     res.status(500).send("erro");
   }
 });
 
-app.post("/send-email", async (req, res) => {
-  try {
-    const { to, subject, message } = req.body;
-
-    const data = await resend.emails.send({
-      from: "Sistema <onboarding@resend.dev>",
-      to,
-      subject,
-      html: `
-        <div style="font-family: Arial">
-          <h2>${subject}</h2>
-          <p>${message}</p>
-        </div>
-      `
-    });
-
-    return res.json({ success: true, data });
-  } catch (error) {
-    return res.status(500).json({ success: false, error: error.message });
-  }
-});
-
+/* =========================
+   START SERVER
+========================= */
 
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+  console.log("Servidor rodando na porta", PORT);
 });
