@@ -205,12 +205,13 @@ app.post("/webhook", async (req, res) => {
 
     const paymentId =
       req.body?.data?.id ||
-      req.body?.id;
+      req.body?.id ||
+      req.body?.resource;
 
     console.log("Payment ID recebido:", paymentId);
 
     if (!paymentId) {
-      return res.status(200).send("ok");
+      return res.status(200).send("sem id");
     }
 
     let pagamentoDetalhado;
@@ -219,12 +220,12 @@ app.post("/webhook", async (req, res) => {
       pagamentoDetalhado = await payment.get(paymentId);
     } catch (err) {
       console.log("❌ Erro ao buscar pagamento:", err.message);
-      return res.status(200).send("erro ao buscar pagamento");
+      return res.status(200).send("erro mp");
     }
 
     const status =
-      pagamentoDetalhado.status ||
-      pagamentoDetalhado.body?.status;
+      pagamentoDetalhado.body?.status ||
+      pagamentoDetalhado.status;
 
     console.log("Status:", status);
 
