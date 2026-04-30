@@ -211,9 +211,16 @@ app.post("/webhook", async (req, res) => {
       return res.status(200).send("ok");
     }
 
-    const pagamentoDetalhado = await payment.get({
-      id: Number(paymentId)
-    });
+    let pagamentoDetalhado;
+
+    try {
+      pagamentoDetalhado = await payment.get({
+        id: Number(paymentId)
+      });
+    } catch (err) {
+      console.log("❌ Erro ao buscar pagamento:", err.message);
+      return res.status(200).send("ignorado");
+    }
 
     const status = pagamentoDetalhado.status;
 
