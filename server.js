@@ -60,7 +60,9 @@ async function enviarEmailConfirmacao(numeros) {
     const cliente = numeros[0];
     const listaNumeros = numeros.map(n => n.numero).join(", ");
 
-    await transporter.sendMail({
+    console.log("📧 Preparando envio para:", cliente.email);
+
+    const info = await transporter.sendMail({
       from: '"Rifa Online" <rafaelvalverde.dev@gmail.com>',
       to: cliente.email,
       subject: "Pagamento confirmado 🎉",
@@ -72,12 +74,13 @@ async function enviarEmailConfirmacao(numeros) {
       `
     });
 
-    console.log("📧 Email enviado com Gmail");
+    console.log("📧 Email enviado:", info);
 
   } catch (err) {
-    console.error("❌ Erro ao enviar email:", err);
+    console.error("❌ ERRO REAL SMTP:", err);
   }
 }
+
 // Rota de teste para enviar email
 app.get("/teste-email", async (req, res) => {
   await transporter.sendMail({
