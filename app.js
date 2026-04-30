@@ -33,19 +33,32 @@ async function carregar() {
       div.innerText = n.numero;
       div.className = "numero";
 
+      // 🔥 DISPONÍVEL
+      if (n.status === "disponivel") {
+        div.classList.add("disponivel");
+      }
+
+      // 🔥 RESERVADO (ainda NÃO pago)
+      if (n.status === "reservado") {
+        div.classList.add("reservado");
+      }
+
+      // 🔥 PAGO (aqui sim é confirmado)
       if (n.status === "pago") {
         div.classList.add("vendido");
-        if (n.email === usuario.email) {
+
+        // ✔ só confirma se for um número que EU selecionei
+        if (selecionados.includes(n.numero)) {
           pagamentoConfirmado = true;
         }
       }
 
-      if (n.status === "reservado") div.classList.add("reservado");
-
+      // bloquear clique se não disponível
       if (n.status !== "disponivel") {
         div.style.cursor = "not-allowed";
       }
 
+      // manter seleção visual
       if (selecionados.includes(n.numero)) {
         div.classList.add("selecionado");
       }
@@ -54,7 +67,7 @@ async function carregar() {
       grid.appendChild(div);
     });
 
-    // 🔥 se detectou pagamento confirmado → parar atualização
+    // 🔥 só para quando REALMENTE pagou
     if (pagamentoConfirmado) {
       pararAtualizacao();
       mostrarConfirmacao();
@@ -88,9 +101,12 @@ function selecionar(n, e) {
 
   atualizarTextoSelecionados();
 
+  // reset pagamento ao mudar seleção
   document.getElementById("pagamento").classList.add("hidden");
   document.getElementById("qr").src = "";
   document.getElementById("pixCode").value = "";
+
+  pararAtualizacao();
 }
 
 /* =========================
@@ -153,7 +169,7 @@ async function comprar() {
 
     await carregar();
 
-    // 🔥 começa monitoramento automático
+    // 🔥 começa monitoramento só após gerar PIX
     iniciarAtualizacao();
 
     document.getElementById("pagamento").scrollIntoView({
@@ -228,6 +244,17 @@ function copiarPix() {
   }
 
   campo.setAttribute("readonly", true);
+}
+
+/* =========================
+   ERRO
+========================= */
+
+function mostrarErro(msg) {
+  const erro = document.getElementById("erro");
+  if (!erro) return;
+
+  erro.innerText = msg;
 }
 
 /* =========================
