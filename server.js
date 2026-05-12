@@ -182,6 +182,12 @@ app.post("/reservar", async (req, res) => {
         payer: {
           email: email.trim().toLowerCase()
         },
+
+        // QR expira em 10 minutos
+        date_of_expiration: new Date(
+          Date.now() + 10 * 60 * 1000
+        ).toISOString(),
+        
         notification_url: `${process.env.BASE_URL}/webhook`
       }
     });
