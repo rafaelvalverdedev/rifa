@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Resultado do Sorteio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: Arial;
+      background: linear-gradient(135deg, #28a745, #218838);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .box {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 15px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .resultado {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 10px;
+    }
+
+    .ok {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .erro {
+      background: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="box">
+    <h2>🎉 Resultado do Sorteio</h2>
+
+    <input id="numero" placeholder="Digite o número sorteado (ex: 455)">
+
+    <button onclick="buscar()">Buscar Ganhador</button>
+
+    <div id="resultado" class="resultado" style="display:none;"></div>
+  </div>
+
+  <script>
+    const API = "https://rifa-baxs.onrender.com";
+
+    async function buscar() {
+      const numero = document.getElementById("numero").value;
+      const box = document.getElementById("resultado");
+
+      if (!numero) {
+        alert("Digite um número");
+        return;
+      }
+
+      box.style.display = "block";
+      box.innerHTML = "Buscando...";
+
+      try {
+        const res = await fetch(`${API}/ganhador/${numero}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          box.className = "resultado erro";
+          box.innerHTML = `
+            ❌ Nenhum ganhador encontrado<br>
+            <small>Esse número não foi pago</small>
+          `;
+          return;
+        }
+
+        box.className = "resultado ok";
+        box.innerHTML = `
+          🎉 <strong>Temos um ganhador!</strong><br><br>
+          <b>Número:</b> ${data.numero}<br>
+          <b>Nome:</b> ${data.nome}<br>
+          <b>Email:</b> ${data.email}<br>
+          <b>Telefone:</b> ${data.telefone}
+        `;
+
+      } catch (err) {
+        box.className = "resultado erro";
+        box.innerHTML = "Erro ao buscar ganhador";
+      }
+    }
+  </script>
+
+</body>
+</html>

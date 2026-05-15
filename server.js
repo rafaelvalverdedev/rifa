@@ -303,6 +303,33 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
+
+app.get("/ganhador/:numero", async (req, res) => {
+  try {
+    const { numero } = req.params;
+
+    const { data, error } = await supabase
+      .from("rifa_numeros")
+      .select("numero, nome, email, telefone")
+      .eq("numero", Number(numero))
+      .eq("status", "pago")
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({
+        error: "Nenhum ganhador encontrado"
+      });
+    }
+
+    res.json(data);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+
 /* =========================
    START SERVER
 ========================= */
