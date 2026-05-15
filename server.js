@@ -40,10 +40,15 @@ async function liberarReservasExpiradas() {
       })
       .eq("status", "reservado")
       .lt("reservado_em", limite.toISOString());
+
   } catch (err) {
     console.error(err);
   }
 }
+
+/* =========================
+   EMAIL
+========================= */
 
 const nodemailer = require("nodemailer");
 
@@ -60,38 +65,37 @@ async function enviarEmailConfirmacao(numeros) {
     const cliente = numeros[0];
     const listaNumeros = numeros.map(n => n.numero).join(", ");
 
-    console.log("📧 Preparando envio para:", cliente.email);
-
-    const info = await transporter.sendMail({
+    await transporter.sendMail({
       from: '"Rifa Online" <rafaelvalverde.dev@gmail.com>',
       to: cliente.email,
       subject: "Pagamento confirmado 🎉",
       html: `
-        <h2>Pagamento confirmado!</h2>
-        <p>Olá, ${cliente.nome}</p>
-        <p>Números: ${listaNumeros}</p>
-        <p>Boa sorte 🍀</p>
+        <div style="font-family: Arial; padding: 20px;">
+          <h2 style="color:#28a745;">✅ Pagamento Confirmado!</h2>
+
+          <p>Olá, <strong>${cliente.nome}</strong></p>
+
+          <p>Seu pagamento foi aprovado com sucesso 🎉</p>
+
+          <h3>🎟️ Seus números:</h3>
+          <p style="font-size:18px; font-weight:bold;">
+            ${listaNumeros}
+          </p>
+
+          <p>Guarde este email como comprovante.</p>
+
+          <br>
+          <p>Boa sorte 🍀</p>
+        </div>
       `
     });
 
-    console.log("📧 Email enviado:", info);
+    console.log("📧 Email enviado para:", cliente.email);
 
   } catch (err) {
-    console.error("❌ ERRO REAL SMTP:", err);
+    console.error("Erro ao enviar email:", err);
   }
 }
-
-// Rota de teste para enviar email
-app.get("/teste-email", async (req, res) => {
-  await transporter.sendMail({
-    from: "rafaelvalverde.dev@gmail.com",
-    to: "rafaelvalverde.dev@gmail.com",
-    subject: "Teste",
-    text: "Funcionando"
-  });
-
-  res.send("ok");
-});
 
 /* =========================
    ROTAS
@@ -109,8 +113,8 @@ app.get("/rifas", async (req, res) => {
     }
 
     res.json(data);
+
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "Erro interno" });
   }
 });
@@ -132,8 +136,8 @@ app.get("/numeros/:rifaId", async (req, res) => {
     }
 
     res.json(data);
+
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "Erro interno" });
   }
 });
@@ -182,12 +186,7 @@ app.post("/reservar", async (req, res) => {
         payer: {
           email: email.trim().toLowerCase()
         },
-
-        // QR expira em 10 minutos
-        date_of_expiration: new Date(
-          Date.now() + 10 * 60 * 1000
-        ).toISOString(),
-        
+        date_of_expiration: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
         notification_url: `${process.env.BASE_URL}/webhook`
       }
     });
@@ -219,54 +218,19 @@ app.post("/reservar", async (req, res) => {
 });
 
 /* =========================
-   WEBHOOK (PAGAMENTO)
+   🔥 WEBHOOK (NOVO)
 ========================= */
+
 app.post("/webhook", async (req, res) => {
   try {
-    console.log("🔥 WEBHOOK DISPARADO");
-    console.log("Body:", req.body);
+    const paymentId = req.body.data?.id;
 
-    // ✔ aceitar todos formatos de webhook do MP
-    if (
-      req.body?.type !== "payment" &&
-      req.body?.topic !== "payment" &&
-      !req.body?.data?.id &&
-      !req.body?.resource
-    ) {
-      return res.status(200).send("ignorado");
-    }
+    if (!paymentId) return res.sendStatus(200);
 
-    const paymentId = String(
-      req.body?.data?.id ||
-      req.body?.id ||
-      req.body?.resource
-    );
+    const pagamento = await payment.get({ id: paymentId });
 
-    console.log("Payment ID recebido:", paymentId);
-
-    if (!paymentId) {
-      return res.status(200).send("sem id");
-    }
-
-    let pagamentoDetalhado;
-
-    try {
-      pagamentoDetalhado = await payment.get({
-        id: Number(paymentId)
-      });
-    } catch (err) {
-      console.log("❌ Erro ao buscar pagamento:", err.message);
-      return res.status(200).send("erro mp");
-    }
-
-    const status =
-      pagamentoDetalhado.status ||
-      pagamentoDetalhado.body?.status;
-
-    console.log("Status:", status);
-
-    if (status !== "approved") {
-      return res.status(200).send("não aprovado");
+    if (pagamento.status !== "approved") {
+      return res.sendStatus(200);
     }
 
     const { data: numeros } = await supabase
@@ -274,14 +238,8 @@ app.post("/webhook", async (req, res) => {
       .select("*")
       .eq("payment_id", paymentId);
 
-    console.log("Numeros encontrados:", numeros?.length);
-
     if (!numeros || numeros.length === 0) {
-      return res.status(200).send("ignorado");
-    }
-
-    if (numeros[0].status === "pago") {
-      return res.status(200).send("já processado");
+      return res.sendStatus(200);
     }
 
     await supabase
@@ -289,20 +247,21 @@ app.post("/webhook", async (req, res) => {
       .update({ status: "pago" })
       .eq("payment_id", paymentId);
 
-    console.log("📧 Vai enviar email para:", numeros[0].email);
-
     await enviarEmailConfirmacao(numeros);
 
-    console.log("✅ PAGAMENTO CONFIRMADO + EMAIL");
+    console.log("✅ Pagamento confirmado e email enviado");
 
-    res.status(200).send("ok");
+    res.sendStatus(200);
 
   } catch (err) {
-    console.error("🔥 ERRO GERAL:", err);
-    res.status(500).send("erro");
+    console.error("Erro webhook:", err);
+    res.sendStatus(500);
   }
 });
 
+/* =========================
+   🔍 GANHADOR (NOVO)
+========================= */
 
 app.get("/ganhador/:numero", async (req, res) => {
   try {
@@ -324,18 +283,16 @@ app.get("/ganhador/:numero", async (req, res) => {
     res.json(data);
 
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "Erro interno" });
   }
 });
 
-
 /* =========================
-   START SERVER
+   START
 ========================= */
 
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("Servidor rodando na porta", PORT);
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
