@@ -246,6 +246,15 @@ function copiarPix() {
   campo.setAttribute("readonly", true);
 }
 
+function voltar() {
+  // limpa sessão do usuário
+  sessionStorage.clear();
+
+  // redireciona para login
+  window.location.href = "login.html";
+}
+
+
 /* =========================
    ERRO
 ========================= */
