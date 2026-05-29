@@ -270,9 +270,19 @@ app.get("/ganhador/:numero", async (req, res) => {
 
     const { data, error } = await supabase
       .from("rifa_numeros")
-      .select("numero, nome, email, telefone")
+      .select(`
+        numero,
+        nome,
+        email,
+        telefone,
+        rifas!inner (
+          id,
+          ativa
+        )
+      `)
       .eq("numero", Number(numero))
       .eq("status", "pago")
+      .eq("rifas.ativa", true)
       .single();
 
     if (error || !data) {
