@@ -1,64 +1,75 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
   <meta charset="UTF-8">
-  <title>Resultado do Sorteio</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sorteio</title>
 
   <style>
     body {
+      margin: 0;
       font-family: Arial;
-      background: linear-gradient(135deg, #28a745, #218838);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: linear-gradient(135deg, #28a745, #1e7e34);
       height: 100vh;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
     .box {
       background: white;
-      padding: 30px;
-      border-radius: 16px;
-      width: 100%;
-      max-width: 400px;
+      width: 400px;
+      padding: 40px;
+      border-radius: 20px;
       text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,.2);
     }
 
-    input {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    .numero {
+      font-size: 90px;
+      font-weight: bold;
+      color: #28a745;
+      margin: 20px 0;
+      transition: .2s;
     }
 
     button {
       width: 100%;
-      padding: 14px;
-      margin-top: 15px;
+      padding: 15px;
+      border: none;
+      border-radius: 10px;
       background: #28a745;
       color: white;
-      border: none;
-      border-radius: 8px;
-      font-weight: bold;
+      font-size: 18px;
       cursor: pointer;
+      font-weight: bold;
     }
 
-    .resultado {
-      margin-top: 20px;
+    button:hover {
+      background: #218838;
+    }
+
+    .info {
+      margin-top: 25px;
+      text-align: left;
+      background: #f5f5f5;
       padding: 15px;
       border-radius: 10px;
+      display: none;
     }
 
-    .ok {
-      background: #d4edda;
-      color: #155724;
+    .loading {
+      animation: pulse .1s infinite;
     }
 
-    .erro {
-      background: #f8d7da;
-      color: #721c24;
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+      100% { transform: scale(1); }
     }
   </style>
 </head>
@@ -66,86 +77,117 @@
 <body>
 
   <div class="box">
-    <h2>🎉 Resultado do Sorteio</h2>
 
-    <input id="numero" placeholder="Digite o número sorteado (ex: 455)">
+    <h1>🎰 Sorteio</h1>
 
-    <button onclick="buscar()">
-      🎰 Iniciar Sorteio
+    <div id="numero" class="numero">
+      ---
+    </div>
+
+    <button onclick="sortear()" id="btn">
+      INICIAR SORTEIO
     </button>
 
-    <div id="resultado" class="resultado" style="display:none;"></div>
+    <div id="info" class="info"></div>
+
   </div>
 
   <script>
+
     const API = "https://rifa-baxs.onrender.com";
 
-    let animacao;
+    let intervalo;
 
-    async function buscar() {
+    async function sortear() {
 
-      const box = document.getElementById("resultado");
+      const numeroEl = document.getElementById("numero");
+      const info = document.getElementById("info");
+      const btn = document.getElementById("btn");
 
-      box.style.display = "block";
-      box.className = "resultado ok";
+      info.style.display = "none";
 
-      // animação dos números
-      let numeroFake = 0;
+      btn.disabled = true;
+      btn.innerText = "SORTEANDO...";
 
-      animacao = setInterval(() => {
-        numeroFake = Math.floor(Math.random() * 1000) + 1;
+      numeroEl.classList.add("loading");
 
-        box.innerHTML = `
-        🎰 Sorteando...<br><br>
-        <h1 style="font-size:60px; margin:0;">
-          ${numeroFake}
-        </h1>
-      `;
-      }, 80);
+      // números rodando
+      intervalo = setInterval(() => {
+
+        const fake =
+          Math.floor(Math.random() * 1000) + 1;
+
+        numeroEl.innerText = fake;
+
+      }, 70);
 
       // espera 5 segundos
       setTimeout(async () => {
 
         try {
 
-          // SUA API deve sortear automaticamente
-          const res = await fetch(`${API}/sortear`);
-          const data = await res.json();
+          const res =
+            await fetch(`${API}/sortear`);
 
-          clearInterval(animacao);
+          const data =
+            await res.json();
+
+          clearInterval(intervalo);
+
+          numeroEl.classList.remove("loading");
 
           if (!res.ok) {
-            box.className = "resultado erro";
-            box.innerHTML = "❌ Nenhum número disponível";
+
+            numeroEl.innerText = "❌";
+
+            info.style.display = "block";
+            info.innerHTML =
+              "Nenhum participante encontrado";
+
+            btn.disabled = false;
+            btn.innerText = "INICIAR SORTEIO";
+
             return;
           }
 
-          box.className = "resultado ok";
+          // número vencedor
+          numeroEl.innerText = data.numero;
 
-          box.innerHTML = `
-          🎉 <strong>GANHADOR!</strong><br><br>
+          // dados
+          info.style.display = "block";
 
-          <h1 style="font-size:70px; color:#28a745; margin:10px 0;">
-            ${data.numero}
-          </h1>
+          info.innerHTML = `
+            <h3>🎉 GANHADOR</h3>
 
-          <b>Nome:</b> ${data.nome}<br>
-          <b>Email:</b> ${data.email}<br>
-          <b>Telefone:</b> ${data.telefone}
-        `;
+            <b>Nome:</b> ${data.nome}<br><br>
+
+            <b>Email:</b> ${data.email}<br><br>
+
+            <b>Telefone:</b> ${data.telefone}
+          `;
+
+          btn.disabled = false;
+          btn.innerText = "SORTEAR NOVAMENTE";
 
         } catch (err) {
 
-          clearInterval(animacao);
+          clearInterval(intervalo);
 
-          box.className = "resultado erro";
-          box.innerHTML = "Erro ao realizar sorteio";
+          numeroEl.classList.remove("loading");
+
+          numeroEl.innerText = "ERRO";
+
+          info.style.display = "block";
+          info.innerHTML = "Erro ao realizar sorteio";
+
+          btn.disabled = false;
+          btn.innerText = "TENTAR NOVAMENTE";
         }
 
       }, 5000);
     }
+
   </script>
 
 </body>
-
 </html>
