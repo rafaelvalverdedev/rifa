@@ -106,6 +106,7 @@ app.get("/rifas", async (req, res) => {
     const { data, error } = await supabase
       .from("rifas")
       .select("*")
+      .eq("ativa", "TRUE")
       .order("id", { ascending: true });
 
     if (error) {
