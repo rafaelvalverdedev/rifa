@@ -299,6 +299,49 @@ app.get("/ganhador/:numero", async (req, res) => {
 });
 
 /* =========================
+   SORTEAR 
+========================= */
+app.get("/sortear", async (req, res) => {
+
+  try {
+
+    // pega somente números pagos de rifas ativas
+    const { data, error } = await supabase
+      .from("rifa_numeros")
+      .select(`
+        numero,
+        nome,
+        email,
+        telefone,
+        rifas!inner (
+          ativa
+        )
+      `)
+      .eq("status", "pago")
+      .eq("rifas.ativa", true);
+
+    if (error || !data.length) {
+      return res.status(404).json({
+        error: "Nenhum participante encontrado"
+      });
+    }
+
+    // sorteia aleatoriamente
+    const sorteado =
+      data[Math.floor(Math.random() * data.length)];
+
+    res.json(sorteado);
+
+  } catch (err) {
+
+    res.status(500).json({
+      error: "Erro interno"
+    });
+  }
+});
+
+
+/* =========================
    START
 ========================= */
 
