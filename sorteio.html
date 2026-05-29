@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
   <meta charset="UTF-8">
   <title>Resultado do Sorteio</title>
@@ -69,7 +70,9 @@
 
     <input id="numero" placeholder="Digite o número sorteado (ex: 455)">
 
-    <button onclick="buscar()">Buscar Ganhador</button>
+    <button onclick="buscar()">
+      🎰 Iniciar Sorteio
+    </button>
 
     <div id="resultado" class="resultado" style="display:none;"></div>
   </div>
@@ -77,46 +80,72 @@
   <script>
     const API = "https://rifa-baxs.onrender.com";
 
+    let animacao;
+
     async function buscar() {
-      const numero = document.getElementById("numero").value;
+
       const box = document.getElementById("resultado");
 
-      if (!numero) {
-        alert("Digite um número");
-        return;
-      }
-
       box.style.display = "block";
-      box.innerHTML = "Buscando...";
+      box.className = "resultado ok";
 
-      try {
-        const res = await fetch(`${API}/ganhador/${numero}`);
-        const data = await res.json();
+      // animação dos números
+      let numeroFake = 0;
 
-        if (!res.ok) {
-          box.className = "resultado erro";
-          box.innerHTML = `
-            ❌ Nenhum ganhador encontrado<br>
-            <small>Esse número não foi pago</small>
-          `;
-          return;
-        }
+      animacao = setInterval(() => {
+        numeroFake = Math.floor(Math.random() * 1000) + 1;
 
-        box.className = "resultado ok";
         box.innerHTML = `
-          🎉 <strong>Temos um ganhador!</strong><br><br>
-          <b>Número:</b> ${data.numero}<br>
+        🎰 Sorteando...<br><br>
+        <h1 style="font-size:60px; margin:0;">
+          ${numeroFake}
+        </h1>
+      `;
+      }, 80);
+
+      // espera 5 segundos
+      setTimeout(async () => {
+
+        try {
+
+          // SUA API deve sortear automaticamente
+          const res = await fetch(`${API}/sortear`);
+          const data = await res.json();
+
+          clearInterval(animacao);
+
+          if (!res.ok) {
+            box.className = "resultado erro";
+            box.innerHTML = "❌ Nenhum número disponível";
+            return;
+          }
+
+          box.className = "resultado ok";
+
+          box.innerHTML = `
+          🎉 <strong>GANHADOR!</strong><br><br>
+
+          <h1 style="font-size:70px; color:#28a745; margin:10px 0;">
+            ${data.numero}
+          </h1>
+
           <b>Nome:</b> ${data.nome}<br>
           <b>Email:</b> ${data.email}<br>
           <b>Telefone:</b> ${data.telefone}
         `;
 
-      } catch (err) {
-        box.className = "resultado erro";
-        box.innerHTML = "Erro ao buscar ganhador";
-      }
+        } catch (err) {
+
+          clearInterval(animacao);
+
+          box.className = "resultado erro";
+          box.innerHTML = "Erro ao realizar sorteio";
+        }
+
+      }, 5000);
     }
   </script>
 
 </body>
+
 </html>
